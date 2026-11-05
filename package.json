@@ -1,0 +1,34 @@
+{
+  "name": "3d-video-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "3D animated videos with three.js + Remotion, narrated with your own voice and auto-captioned",
+  "type": "module",
+  "scripts": {
+    "dev": "remotion studio",
+    "transcribe": "node scripts/transcribe.mjs",
+    "render": "remotion render MainVideo out/video.mp4",
+    "render:vertical": "remotion render MainVideoVertical out/video-vertical.mp4",
+    "still": "remotion still MainVideo out/thumbnail.png --frame=30",
+    "typecheck": "tsc --noEmit",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.2",
+    "@remotion/captions": "4.0.540",
+    "@remotion/cli": "4.0.540",
+    "@remotion/install-whisper-cpp": "4.0.540",
+    "@remotion/media-utils": "4.0.540",
+    "@remotion/three": "4.0.540",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.540",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "@types/three": "0.187.0",
+    "typescript": "5.9.3"
+  }
+}

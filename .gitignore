@@ -1,0 +1,7 @@
+node_modules/
+out/
+.DS_Store
+# whisper.cpp binary + models (large, re-downloaded by `npm run transcribe`)
+whisper.cpp/
+# temporary 16kHz wav made during transcription
+public/*.16k.wav

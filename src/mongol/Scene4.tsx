@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { remapTime } from "./timeRemap";
 import { EurasiaMap, SUN, useHeightSampler, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
 import { CameraRig, Cloud, FOV, Key, Label, Pose, poseAt, useProjector } from "./map/mapScene";
@@ -18,7 +19,11 @@ import { TinyRider } from "./karakorum";
  * Starts on the same map view Scene 3 ends on (they crossfade in MongolVideo).
  */
 
-export const SCENE4_FRAMES = 1200;
+// Internal animation timeline (frames). The scene is played back faster to fit the
+// 3-minute video: see TIME_MAP / remapTime.
+const SCENE4_TIMELINE = 1200;
+export const SCENE4_FRAMES = 900; // 30 s in the final video
+const TIME_MAP: [number, number][] = [[0, 0], [330, 450], [620, 840], [900, 1200]];
 const PART_B = 450;
 const PART_C = 840;
 const YAM_START = 480;
@@ -316,7 +321,7 @@ const MapClouds: React.FC<{ frame: number; pose: Pose }> = ({ frame, pose }) => 
 // ======================================================================
 
 export const Scene4: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height, fps } = useVideoConfig();
   const textures = useMapTextures();
   const h = useHeightSampler(textures);
@@ -365,7 +370,7 @@ export const Scene4: React.FC = () => {
       { f: YAM_START + 20, ...yamView(0.42), dist: 30, tilt: 36, turn: -4, ease: Easing.inOut(Easing.cubic) },
       { f: PART_C - 30, ...yamView(0.6), dist: 27, tilt: 40, turn: 4, ease: Easing.inOut(Easing.sin) },
       { f: PART_C + 70, lon: 74, lat: 44, z: 0, dist: 150, tilt: 40, turn: 4, ease: Easing.inOut(Easing.cubic) },
-      { f: SCENE4_FRAMES, lon: 75, lat: 44, z: 0, dist: 165, tilt: 38, turn: 7, ease: Easing.inOut(Easing.sin) },
+      { f: SCENE4_TIMELINE, lon: 75, lat: 44, z: 0, dist: 165, tilt: 38, turn: 7, ease: Easing.inOut(Easing.sin) },
     ],
     [geo],
   );
@@ -474,7 +479,7 @@ export const Scene4: React.FC = () => {
       <YamHud frame={frame} courier={courier} />
       <Badges frame={frame} />
       {/* end on soft white: Scene 5 opens from it */}
-      <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: interpolate(frame, [SCENE4_FRAMES - 45, SCENE4_FRAMES], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) }) }} />
+      <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: interpolate(frame, [SCENE4_TIMELINE - 45, SCENE4_TIMELINE], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) }) }} />
     </AbsoluteFill>
   );
 };

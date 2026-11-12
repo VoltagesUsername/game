@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { remapTime } from "./timeRemap";
 import { Glow, Ridge, Rider, hills, mountains, seeded } from "./SteppeNight";
 import { StandingWoman } from "./characters";
 import { FlatClouds, GerFootprint, PACK_DURATION, PackingGer, Sheep, YakCart } from "./nomad";
@@ -18,7 +19,11 @@ import { FlatClouds, GerFootprint, PACK_DURATION, PackingGer, Sheep, YakCart } f
  * Opens from white and ends on white (soft cloud transitions between scenes).
  */
 
-export const SCENE5_FRAMES = 1350;
+// Internal animation timeline (frames). The scene is played back faster to fit the
+// 3-minute video: see TIME_MAP / remapTime.
+const SCENE5_TIMELINE = 1350;
+export const SCENE5_FRAMES = 900; // 30 s in the final video
+const TIME_MAP: [number, number][] = [[0, 0], [420, 600], [690, 1050], [900, 1350]];
 const PACK_START = 90;
 const PACK_END = PACK_START + PACK_DURATION;
 const MOVE_START = PACK_END + 10;
@@ -577,10 +582,10 @@ const Khatuns: React.FC<{ frame: number }> = ({ frame }) => {
 // ======================================================================
 
 export const Scene5: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height } = useVideoConfig();
   const fromWhite = interpolate(frame, [0, 40], [1, 0], { ...clamp, easing: Easing.out(Easing.quad) });
-  const toWhite = interpolate(frame, [SCENE5_FRAMES - 45, SCENE5_FRAMES], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
+  const toWhite = interpolate(frame, [SCENE5_TIMELINE - 45, SCENE5_TIMELINE], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
   const dim = interpolate(frame, [PART_B - 10, PART_B + 25], [0, 1], clamp);
   const lifeTitle = interpolate(frame, [30, 60, PACK_START + 60, PACK_START + 80], [0, 1, 1, 0], clamp);
   const moveTitle = interpolate(frame, [MOVE_START, MOVE_START + 25, ICONS - 10, ICONS + 10], [0, 1, 1, 0], clamp);

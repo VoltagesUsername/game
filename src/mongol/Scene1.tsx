@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { remapTime } from "./timeRemap";
 import { EurasiaMap, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
 
@@ -18,8 +19,12 @@ import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
 // Part boundaries (frames)
 const PART_B = 300;
 const PART_C = 660;
-export const SCENE1_FRAMES = 900;
-const END = SCENE1_FRAMES;
+// Internal animation timeline (frames). The scene is played back faster to fit the
+// 3-minute video: see TIME_MAP / remapTime.
+const SCENE1_TIMELINE = 900;
+export const SCENE1_FRAMES = 660; // 22 s in the final video
+const TIME_MAP: [number, number][] = [[0, 0], [240, 300], [470, 660], [660, 900]];
+const END = SCENE1_TIMELINE;
 // Ending: dive toward Mongolia and fade into the night sky Scene 2 opens with
 const DIVE = 830;
 export const SCENE2_NIGHT = "#0d1230";
@@ -147,7 +152,7 @@ const BlockShadow: React.FC = () => {
 // ---------- scene ----------
 
 export const Scene1: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height } = useVideoConfig();
   const textures = useMapTextures();
 

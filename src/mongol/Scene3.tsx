@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { remapTime } from "./timeRemap";
 import { EurasiaMap, SUN, useHeightSampler, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
 import { Glow, seeded } from "./SteppeNight";
@@ -19,7 +20,11 @@ import { CITY_SCALE, CampsAndHerds, Countryside, CountryPeople, KarakorumCity, R
  * Ends on the full map (no fade) so Scene 4 can continue on the same map.
  */
 
-export const SCENE3_FRAMES = 1200;
+// Internal animation timeline (frames). The scene is played back faster to fit the
+// 3-minute video: see TIME_MAP / remapTime.
+const SCENE3_TIMELINE = 1200;
+export const SCENE3_FRAMES = 750; // 25 s in the final video
+const TIME_MAP: [number, number][] = [[0, 0], [150, 205], [300, 450], [560, 900], [750, 1200]];
 const PART_B = 450;
 const PART_C = 900;
 const PIN = 205; // pin lands on Karakorum
@@ -46,7 +51,7 @@ const makeKeys = (kz: number): Key[] => [
   { f: PART_B, lon: KARAKORUM[0] + 0.3, lat: KARAKORUM[1] + 0.4, z: kz + 0.2, dist: 14, tilt: 50, turn: 14, ease: Easing.inOut(Easing.sin) },
   { f: 690, lon: 76, lat: 43.5, z: 0, dist: 165, tilt: 38, turn: 2, ease: Easing.inOut(Easing.cubic) },
   { f: PART_C, lon: 76, lat: 43.5, z: 0, dist: 157, tilt: 38, turn: 5, ease: Easing.inOut(Easing.sin) },
-  { f: SCENE3_FRAMES, lon: 78, lat: 45, z: 0, dist: 138, tilt: 44, turn: 9, ease: Easing.inOut(Easing.sin) },
+  { f: SCENE3_TIMELINE, lon: 78, lat: 45, z: 0, dist: 138, tilt: 44, turn: 9, ease: Easing.inOut(Easing.sin) },
 ];
 
 // ======================================================================
@@ -253,7 +258,7 @@ const CALLOUTS = [
 // ======================================================================
 
 export const Scene3: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height, fps } = useVideoConfig();
   const textures = useMapTextures();
   const h = useHeightSampler(textures);

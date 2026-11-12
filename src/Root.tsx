@@ -2,7 +2,7 @@ import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
 import { getAudioDurationInSeconds } from "@remotion/media-utils";
 import { MainVideo, MainVideoProps } from "./MainVideo";
 import { SteppeNight } from "./mongol/SteppeNight";
-import { Scene1 } from "./mongol/Scene1";
+import { Scene1, SCENE1_FRAMES } from "./mongol/Scene1";
 import { Scene2, SCENE2_FRAMES } from "./mongol/Scene2";
 import { Scene3, SCENE3_FRAMES } from "./mongol/Scene3";
 import { Scene4, SCENE4_FRAMES } from "./mongol/Scene4";
@@ -67,7 +67,7 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={1920}
         height={1080}
-        durationInFrames={30 * FPS}
+        durationInFrames={SCENE1_FRAMES}
       />
       <Composition
         id="Scene2"

@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { remapTime } from "./timeRemap";
 import { Blob, Glow, Ridge, Rider, hills, mountains, seeded } from "./SteppeNight";
 import { StandingLeader } from "./characters";
 import { ArcherBand, Part3Cards, SkyClouds } from "./Scene2Part3";
@@ -20,8 +21,12 @@ const INTRO = 30; // camera tilts down from the night sky (continues Scene 1's e
 const UNIFY = 240; // the 1206 moment
 const PART_2 = 390;
 const PART_3 = 780; // three advantages: mobility, bow, siege tech
-export const SCENE2_FRAMES = 1230;
-const END = SCENE2_FRAMES;
+// Internal animation timeline (frames). The scene is played back faster to fit the
+// 3-minute video: see TIME_MAP / remapTime.
+const SCENE2_TIMELINE = 1230;
+export const SCENE2_FRAMES = 900; // 30 s in the final video
+const TIME_MAP: [number, number][] = [[0, 0], [180, 240], [300, 390], [580, 780], [900, 1230]];
+const END = SCENE2_TIMELINE;
 const CARDS_EXIT = END - 150; // cards leave, camera tilts up into the clouds
 const TO_WHITE = END - 55; // fade to the white Scene 3 opens with
 
@@ -652,7 +657,7 @@ const Part2: React.FC<{ frame: number }> = ({ frame }) => {
 // ======================================================================
 
 export const Scene2: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height, fps } = useVideoConfig();
 
   const dawn = interpolate(frame, [UNIFY, UNIFY + 100], [0, 1], { ...clamp, easing: Easing.inOut(Easing.sin) });

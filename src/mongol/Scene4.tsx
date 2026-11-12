@@ -473,6 +473,8 @@ export const Scene4: React.FC = () => {
       <SilkTitle frame={frame} />
       <YamHud frame={frame} courier={courier} />
       <Badges frame={frame} />
+      {/* end on soft white: Scene 5 opens from it */}
+      <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: interpolate(frame, [SCENE4_FRAMES - 45, SCENE4_FRAMES], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) }) }} />
     </AbsoluteFill>
   );
 };

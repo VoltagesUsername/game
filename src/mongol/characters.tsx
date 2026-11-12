@@ -184,7 +184,11 @@ export const DetailedRider: React.FC<{
   pose?: "reins" | "draw";
   armor?: boolean;
   mustache?: boolean;
-}> = ({ frame, offset, hat, robe = "#2f5aa8", banner, bow = true, pose = "reins", armor, mustache }) => {
+  /** woman rider: braids with silver ornaments, earrings, no beard */
+  female?: boolean;
+  /** false = just the horse (spare horses, herds) */
+  rider?: boolean;
+}> = ({ frame, offset, hat, robe = "#2f5aa8", banner, bow = true, pose = "reins", armor, mustache, female, rider = true }) => {
   const ph = frame * 0.42 + offset;
   const bob = Math.abs(Math.sin(ph)) * 0.06;
   const pitch = Math.sin(ph) * 0.035;
@@ -257,6 +261,8 @@ export const DetailedRider: React.FC<{
       <Circle x={-0.22} y={1.1} r={0.02} color={TRIM} z={0.0093} />
       <Circle x={0.18} y={1.11} r={0.02} color={TRIM} z={0.0093} />
 
+      {rider && (
+        <>
       {/* rider: quiver and bow case */}
       <Poly pts={QUIVER} color="#7a4a24" z={0.0094} />
       <Bar a={[-0.2, 1.05]} b={[-0.1, 1.06]} w={0.02} color={TRIM} z={0.0095} />
@@ -345,8 +351,20 @@ export const DetailedRider: React.FC<{
       <Circle x={0.12} y={1.62} r={0.02} color={EYE} z={0.02} />
       <Circle x={0.127} y={1.618} r={0.01} color="#2a1a10" z={0.0201} />
       <Bar a={[0.09, 1.66]} b={[0.15, 1.655]} w={0.012} color={EYE} z={0.02} />
-      {mustache && <Poly pts={[[0.16, 1.55], [0.1, 1.53], [0.07, 1.48], [0.11, 1.52]]} color={HAIR} z={0.0202} />}
+      {mustache && !female && <Poly pts={[[0.16, 1.55], [0.1, 1.53], [0.07, 1.48], [0.11, 1.52]]} color={HAIR} z={0.0202} />}
+      {female && (
+        <>
+          {/* braids down the back with silver ornaments, gold earring */}
+          <Limb a={[-0.02, 1.58]} b={[-0.12, 1.32 + Math.sin(ph) * 0.02]} w={0.045} color="#120c0a" z={0.0185} />
+          <Circle x={-0.1} y={1.36} r={0.025} color="#dfe6ee" z={0.0186} />
+          <Circle x={-0.07} y={1.45} r={0.02} color="#dfe6ee" z={0.0186} />
+          <Circle x={0.03} y={1.52} r={0.018} color={TRIM} z={0.0203} />
+          <Circle x={0.165} y={1.555} r={0.012} color="#e88a8a" z={0.0203} />
+        </>
+      )}
       <MongolHat position={[0.06, 1.66, 0.021]} size={0.27} color={hat} frame={frame} plume={armor} />
+        </>
+      )}
       {banner && (
         <group position={[-0.2, 1.0, 0.0]}>
           <Bar a={[0, 0]} b={[0, 1.6]} w={0.035} color="#2a1810" />
@@ -485,6 +503,93 @@ export const StandingLeader: React.FC<{ frame: number; robe?: string; hat?: stri
         <Circle x={0.33} y={1.79 + wave(2) * 1.2} r={0.09} color={TRIM} z={0.0045} />
         <Poly pts={[[0.33, 1.87 + wave(2) * 1.2], [0.37, 1.77 + wave(2) * 1.2], [0.33, 1.73 + wave(2) * 1.2], [0.29, 1.77 + wave(2) * 1.2]]} color="#a8302a" z={0.0046} />
       </group>
+    </group>
+  );
+};
+
+
+// ---------- standing woman (front view) ----------
+
+const W_DEEL: P[] = [[-0.2, 1.04], [0.2, 1.04], [0.26, 0.6], [0.34, 0.06], [-0.34, 0.06], [-0.26, 0.6]];
+const W_SHOULDERS: P[] = [[-0.33, 0.96], [-0.22, 1.1], [0.22, 1.1], [0.33, 0.96], [0.24, 0.72], [-0.24, 0.72]];
+
+/** Mongol woman: long deel with trim, sash, braids with silver ornaments, earrings, a tall hat; holds a bowl of airag. */
+export const StandingWoman: React.FC<{ frame: number; robe?: string; hat?: string; bowl?: boolean }> = ({
+  frame, robe = "#6a3d8a", hat = "#c8332b", bowl = true,
+}) => {
+  const robeShade = shade(robe, 0.7);
+  const blink = frame % 110 > 106;
+  const breathe = Math.sin(frame * 0.06) * 0.01;
+  return (
+    <group position={[0, breathe, 0]}>
+      {/* boots peeking out */}
+      <Poly pts={[[-0.16, 0.08], [-0.04, 0.08], [-0.04, 0.0], [-0.2, 0.0], [-0.24, 0.04]]} color={BOOT} />
+      <Poly pts={[[0.16, 0.08], [0.04, 0.08], [0.04, 0.0], [0.2, 0.0], [0.24, 0.04]]} color={BOOT} />
+      {/* long deel */}
+      <Poly pts={W_DEEL} color={robe} z={0.002} />
+      <Poly pts={[[-0.2, 1.04], [-0.12, 1.04], [-0.18, 0.6], [-0.25, 0.06], [-0.34, 0.06], [-0.26, 0.6]]} color={robeShade} z={0.0022} />
+      <Poly pts={[[-0.34, 0.06], [0.34, 0.06], [0.33, 0.14], [-0.33, 0.14]]} color={TRIM} z={0.003} />
+      <Bar a={[-0.12, 1.02]} b={[0.16, 0.7]} w={0.04} color={TRIM} z={0.004} />
+      <Bar a={[0.16, 0.7]} b={[0.19, 0.14]} w={0.035} color={TRIM} z={0.004} />
+      <Poly pts={W_SHOULDERS} color={robe} smooth z={0.005} />
+      <Poly pts={[[-0.33, 0.96], [-0.22, 1.1], [-0.13, 1.09], [-0.18, 0.72], [-0.24, 0.72]]} color={robeShade} smooth z={0.0052} />
+      <Bar a={[-0.12, 1.08]} b={[0.17, 0.74]} w={0.04} color={TRIM} z={0.006} />
+      {[[0.06, 0.93], [0.12, 0.85]].map(([x, y], i) => <Circle key={i} x={x} y={y} r={0.015} color="#fff1c4" z={0.0062} />)}
+      {/* sash */}
+      <Bar a={[-0.25, 0.66]} b={[0.25, 0.66]} w={0.09} color="#e08a2a" z={0.008} />
+      <Poly pts={[[0.1, 0.63], [0.16, 0.63], [0.15, 0.42 + Math.sin(frame * 0.08) * 0.01], [0.09, 0.42]]} color="#c9741f" z={0.0082} />
+      {/* arms holding the bowl in front */}
+      <Limb a={[-0.29, 0.98]} b={[-0.22, 0.76]} w={0.11} color={robe} z={0.012} />
+      <Limb a={[-0.22, 0.76]} b={[-0.08, 0.8]} w={0.095} color={robe} z={0.0121} />
+      <Limb a={[0.29, 0.98]} b={[0.22, 0.76]} w={0.11} color={robe} z={0.012} />
+      <Limb a={[0.22, 0.76]} b={[0.08, 0.8]} w={0.095} color={robe} z={0.0121} />
+      {/* long horse-hoof cuffs */}
+      <Poly pts={[[-0.14, 0.86], [-0.04, 0.84], [-0.04, 0.76], [-0.14, 0.74]]} color={TRIM} z={0.0125} />
+      <Poly pts={[[0.14, 0.86], [0.04, 0.84], [0.04, 0.76], [0.14, 0.74]]} color={TRIM} z={0.0125} />
+      {bowl && (
+        <group position={[0, 0.84, 0.013]}>
+          <Poly pts={[[-0.13, 0.03], [0.13, 0.03], [0.09, -0.07], [-0.09, -0.07]]} color="#d9b47a" smooth />
+          <Bar a={[-0.13, 0.03]} b={[0.13, 0.03]} w={0.025} color="#8a5a2a" z={0.001} />
+          <Poly pts={[[-0.11, 0.035], [0.11, 0.035], [0.08, 0.06], [-0.08, 0.06]]} color="#fbf6ea" smooth z={0.002} />
+          {[0, 1].map((k) => {
+            const t = ((frame * 0.5 + k * 30) % 60) / 60;
+            return <Circle key={k} x={-0.03 + k * 0.05 + Math.sin(t * 6) * 0.01} y={0.08 + t * 0.2} r={0.012 + t * 0.02} color="#f7f2e8" z={0.003} />;
+          })}
+        </group>
+      )}
+      {/* head: braids behind, face, earrings, rosy cheeks */}
+      <Limb a={[-0.15, 1.36]} b={[-0.19, 0.98]} w={0.06} color="#120c0a" z={0.0145} />
+      <Limb a={[0.15, 1.36]} b={[0.19, 0.98]} w={0.06} color="#120c0a" z={0.0145} />
+      {[1.18, 1.08].map((y, i) => (
+        <group key={i}>
+          <Circle x={-0.175 - i * 0.01} y={y} r={0.03} color="#dfe6ee" z={0.0146} />
+          <Circle x={0.175 + i * 0.01} y={y} r={0.03} color="#dfe6ee" z={0.0146} />
+        </group>
+      ))}
+      <Circle x={0} y={1.33} r={0.18} color={INK} z={0.015} />
+      {!blink ? (
+        <>
+          <Circle x={-0.065} y={1.35} r={0.024} color={EYE} z={0.016} sx={1.2} />
+          <Circle x={0.065} y={1.35} r={0.024} color={EYE} z={0.016} sx={1.2} />
+          <Circle x={-0.062} y={1.347} r={0.012} color="#2a1a10" z={0.0161} />
+          <Circle x={0.068} y={1.347} r={0.012} color="#2a1a10" z={0.0161} />
+          <Bar a={[-0.1, 1.375]} b={[-0.115, 1.39]} w={0.008} color={EYE} z={0.0161} />
+          <Bar a={[0.1, 1.375]} b={[0.115, 1.39]} w={0.008} color={EYE} z={0.0161} />
+        </>
+      ) : (
+        <>
+          <Bar a={[-0.09, 1.35]} b={[-0.04, 1.35]} w={0.012} color={EYE} z={0.016} />
+          <Bar a={[0.04, 1.35]} b={[0.09, 1.35]} w={0.012} color={EYE} z={0.016} />
+        </>
+      )}
+      <Circle x={-0.1} y={1.29} r={0.03} color="#a8404a" z={0.0158} />
+      <Circle x={0.1} y={1.29} r={0.03} color="#a8404a" z={0.0158} />
+      <Arc x={0} y={1.3} r={0.045} w={0.013} start={Math.PI + 0.6} len={Math.PI - 1.2} color={EYE} z={0.016} />
+      <Circle x={-0.18} y={1.27} r={0.022} color={TRIM} z={0.0162} />
+      <Circle x={0.18} y={1.27} r={0.022} color={TRIM} z={0.0162} />
+      <Bar a={[-0.18, 1.25]} b={[-0.18, 1.2]} w={0.012} color="#c8332b" z={0.0162} />
+      <Bar a={[0.18, 1.25]} b={[0.18, 1.2]} w={0.012} color="#c8332b" z={0.0162} />
+      <MongolHat position={[0, 1.44, 0.017]} size={0.38} color={hat} frame={frame} />
     </group>
   );
 };

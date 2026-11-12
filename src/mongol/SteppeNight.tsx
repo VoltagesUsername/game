@@ -369,7 +369,9 @@ export const Rider: React.FC<{
   pose?: "reins" | "draw";
   armor?: boolean;
   mustache?: boolean;
-}> = ({ frame, offset, hat, banner, robe, pose, armor, mustache }) => (
+  female?: boolean;
+  rider?: boolean;
+}> = ({ frame, offset, hat, banner, robe, pose, armor, mustache, female, rider }) => (
   <DetailedRider
     frame={frame}
     offset={offset}
@@ -379,6 +381,8 @@ export const Rider: React.FC<{
     pose={pose}
     armor={armor}
     mustache={mustache}
+    female={female}
+    rider={rider}
   />
 );
 

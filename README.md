@@ -75,3 +75,13 @@ public/          Put your voiceover, images, 3D models (.glb) here
   `npx remotion render MainVideo out/video.mp4 --gl=swangle`
 - **Rendering is slow / WebGL context lost**: lower concurrency in
   `remotion.config.ts` (`Config.setConcurrency(1)`).
+
+## Map data credits (Mongol scenes)
+
+- Elevation, land/water mask and satellite colours: NASA Visible Earth / Blue Marble
+  (public domain), via https://github.com/turban/webgl-earth
+- Mongol Empire borders in 1279: [historical-basemaps](https://github.com/aourednik/historical-basemaps)
+  by André Ourednik (GPL-3.0), extracted to `data/mongol_1279.geojson`.
+  Borders for 1206–1227 and the 1260 Song frontier are hand-drawn approximations
+  in `src/mongol/map/config.js`.
+- `scripts/build-map.mjs` turns these into `public/map/*.png` (already built and committed).

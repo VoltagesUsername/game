@@ -74,6 +74,7 @@ uniform float uProgress;  // 0..WAVES, how far the empire has spread
 uniform float uWaves;
 uniform float uGlow;      // 0..1, glow on the advancing front
 uniform float uEmpireOpacity;
+uniform float uShine;     // 0..1, whole empire glows amber
 varying vec2 vUv;
 
 float insideAt(vec2 uv) {
@@ -131,6 +132,7 @@ void main() {
     col = mix(col, empire, inside * uEmpireOpacity);
     float front = exp(-max(ahead, 0.0) / 0.05) * inside;
     col += vec3(1.0, 0.68, 0.25) * front * uGlow * 0.9;
+    col = mix(col, vec3(1.0, 0.62, 0.2) * (0.55 + 0.6 * diffuse), inside * uShine * 0.55);
 
     // border line where the empire meets land it hasn't reached yet
     vec2 o = uTexel * 2.2;
@@ -219,7 +221,9 @@ export const EurasiaMap: React.FC<{
   /** 0..1 glow on the advancing edge */
   glow: number;
   empireOpacity?: number;
-}> = ({ textures, progress, glow, empireOpacity = 0.66 }) => {
+  /** 0..1 make the whole empire glow amber */
+  shine?: number;
+}> = ({ textures, progress, glow, empireOpacity = 0.66, shine = 0 }) => {
   const terrainGeometry = useMemo(() => new THREE.PlaneGeometry(MAP_W, MAP_H, 1024, 440), []);
 
   const terrainMaterial = useMemo(() => {
@@ -236,6 +240,7 @@ export const EurasiaMap: React.FC<{
         uProgress: { value: 0 },
         uWaves: { value: WAVES.length },
         uGlow: { value: 0 },
+        uShine: { value: 0 },
         uEmpireOpacity: { value: empireOpacity },
       },
       vertexShader: TERRAIN_VERT,
@@ -269,6 +274,7 @@ export const EurasiaMap: React.FC<{
 
   terrainMaterial.uniforms.uProgress.value = progress;
   terrainMaterial.uniforms.uGlow.value = glow;
+  terrainMaterial.uniforms.uShine.value = shine;
 
   return (
     <group>

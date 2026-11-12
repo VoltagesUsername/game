@@ -9,7 +9,7 @@
     "transcribe": "node scripts/transcribe.mjs",
     "render": "remotion render MainVideo out/video.mp4",
     "render:vertical": "remotion render MainVideoVertical out/video-vertical.mp4",
-    "render:scene1": "remotion render Scene1Hook out/scene1-hook.mp4",
+    "render:scene1": "remotion render Scene1 out/scene1.mp4",
     "render:mongol": "remotion render MongolTest out/mongol-test.mp4",
     "still": "remotion still MainVideo out/thumbnail.png --frame=30",
     "typecheck": "tsc --noEmit",

@@ -675,7 +675,7 @@ const TinyPerson: React.FC<{
 const BOOT_C = "#3a2414";
 
 /** A tiny horse with rider for the roads and the herds. */
-const TinyRider: React.FC<{ p: V3; heading: number; robe: string; hat: string; frame: number; seed: number; moving?: boolean }> = ({
+export const TinyRider: React.FC<{ p: V3; heading: number; robe: string; hat: string; frame: number; seed: number; moving?: boolean }> = ({
   p, heading, robe, hat, frame, seed, moving = true,
 }) => {
   const ph = moving ? frame * 0.5 + seed : 0;

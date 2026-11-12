@@ -11,7 +11,7 @@ import { MAP, MAP_H, MAP_W, WAVES } from "./config.js";
 
 // How tall mountains are drawn (world units at the highest peak). Real scale would be ~0.08.
 export const EXAGGERATION = 3.2;
-const LAND_LIFT = 0.06; // land sits slightly above the sea, like a model
+export const LAND_LIFT = 0.06; // land sits slightly above the sea, like a model
 const BASE_DEPTH = 6.5; // thickness of the block
 
 export type MapTextures = { terrain: THREE.Texture; color: THREE.Texture; empire: THREE.Texture };
@@ -41,6 +41,47 @@ export const useMapTextures = (): MapTextures | null => {
   return textures;
 };
 
+/**
+ * Ground height (world z) at a longitude/latitude, matching the shader.
+ * Use it to place pins, models and labels exactly on the terrain.
+ */
+export const useHeightSampler = (textures: MapTextures | null) =>
+  useMemo(() => {
+    if (!textures) return null;
+    const img = textures.terrain.image as HTMLImageElement;
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+    ctx.drawImage(img, 0, 0);
+    const data = ctx.getImageData(0, 0, img.width, img.height).data;
+    const px = (x: number, y: number, c: number) => {
+      const xx = Math.max(0, Math.min(img.width - 1, x));
+      const yy = Math.max(0, Math.min(img.height - 1, y));
+      return data[(yy * img.width + xx) * 4 + c] / 255;
+    };
+    const bilinear = (fx: number, fy: number, c: number) => {
+      const x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0;
+      return (
+        px(x0, y0, c) * (1 - tx) * (1 - ty) + px(x0 + 1, y0, c) * tx * (1 - ty) +
+        px(x0, y0 + 1, c) * (1 - tx) * ty + px(x0 + 1, y0 + 1, c) * tx * ty
+      );
+    };
+    return (lon: number, lat: number) => {
+      const u = (lon - MAP.lon0) / (MAP.lon1 - MAP.lon0);
+      const v = (lat - MAP.lat0) / (MAP.lat1 - MAP.lat0);
+      const fx = u * img.width - 0.5;
+      const fy = (1 - v) * img.height - 0.5;
+      const g = bilinear(fx, fy, 1);
+      const land = Math.min(1, Math.max(0, (g - 0.3) / 0.4));
+      const smooth = land * land * (3 - 2 * land);
+      const a = Math.min(1, Math.max(0, (bilinear(fx, fy, 3) - 0.82) / 0.1));
+      const lake = 1 - a * a * (3 - 2 * a);
+      const r = bilinear(fx, fy, 0);
+      return (smooth * (LAND_LIFT + r * EXAGGERATION)) * (1 - lake) + r * EXAGGERATION * lake;
+    };
+  }, [textures]);
+
 const COMMON = /* glsl */ `
 uniform sampler2D uTerrain;
 uniform float uExag;
@@ -49,17 +90,23 @@ float landAt(vec2 uv) { return smoothstep(0.3, 0.7, texture2D(uTerrain, uv).g); 
 float heightAt(vec2 uv) {
   vec4 t = texture2D(uTerrain, uv);
   float land = smoothstep(0.3, 0.7, t.g);
-  return land * (uLift + t.r * uExag);
+  float lake = 1.0 - smoothstep(0.82, 0.92, t.a); // inland lakes keep their own surface height
+  return mix(land * (uLift + t.r * uExag), t.r * uExag, lake);
 }
 `;
 
 const TERRAIN_VERT = /* glsl */ `
 ${COMMON}
+uniform vec4 uFlat;     // x, y, radius, height: flatten the ground here (e.g. under a city)
+uniform float uFlatAmt;
 varying vec2 vUv;
+varying float vFlat;
 void main() {
   vUv = uv;
   vec3 p = position;
-  p.z = heightAt(uv);
+  float w = uFlatAmt * (1.0 - smoothstep(uFlat.z * 0.55, uFlat.z, distance(position.xy, uFlat.xy)));
+  vFlat = w;
+  p.z = mix(heightAt(uv), uFlat.w, w);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }`;
 
@@ -75,7 +122,23 @@ uniform float uWaves;
 uniform float uGlow;      // 0..1, glow on the advancing front
 uniform float uEmpireOpacity;
 uniform float uShine;     // 0..1, whole empire glows amber
+uniform float uDetail;    // 0..1, fine terrain detail for close-ups
+uniform float uBorderGlow;// 0..1, empire border glows gold
 varying vec2 vUv;
+varying float vFlat;
+
+// --- small value-noise helpers for close-up detail ---
+float hash2(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash2(i), hash2(i + vec2(1.0, 0.0)), u.x), mix(hash2(i + vec2(0.0, 1.0)), hash2(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) {
+  float a = 0.5, s = 0.0;
+  for (int i = 0; i < 5; i++) { s += a * vnoise(p); p = p * 2.03 + 17.1; a *= 0.5; }
+  return s;
+}
 
 float insideAt(vec2 uv) {
   float e = texture2D(uEmpire, uv).r * 255.0;
@@ -99,6 +162,14 @@ void main() {
   float hU = texture2D(uTerrain, vUv + vec2(0.0, uTexel.y)).r;
   float relief = uExag * 2.0;
   vec3 n = normalize(vec3(-(hR - hL) * relief / (2.0 * uWorldTexel.x), -(hU - hD) * relief / (2.0 * uWorldTexel.y), 1.0));
+  // close-up detail: rocky ridges in the mountains, gentle ripples on the plains
+  vec2 dp = vUv * vec2(${MAP.width}.0, ${MAP.height}.0) * 0.9;
+  float rough = (0.25 + 1.6 * smoothstep(0.08, 0.5, t.r)) * uDetail * landAt(vUv);
+  if (rough > 0.001) {
+    float e0 = fbm(dp), ex = fbm(dp + vec2(0.35, 0.0)), ey = fbm(dp + vec2(0.0, 0.35));
+    n = normalize(n + vec3(-(ex - e0), -(ey - e0), 0.0) * 2.4 * rough);
+  }
+  n = normalize(mix(n, vec3(0.0, 0.0, 1.0), vFlat));
   float diffuse = max(dot(n, normalize(uSun)), 0.0);
   float shade = 0.5 + 0.62 * diffuse;
 
@@ -108,6 +179,13 @@ void main() {
   // high plateaus: dry tan/brown; only the highest, steepest peaks get snow
   landCol = mix(landCol, vec3(0.52, 0.42, 0.31), smoothstep(0.4, 0.58, t.r) * 0.8);
   landCol = mix(landCol, vec3(0.93, 0.95, 0.98), smoothstep(0.7, 0.88, t.r) * smoothstep(0.02, 0.06, abs(hR - hL) + abs(hU - hD)));
+  // close-up colour variation: patches of greener/drier grass and darker rock
+  float patchN = fbm(vUv * vec2(${MAP.width}.0, ${MAP.height}.0) * 0.25 + 3.7);
+  landCol *= mix(1.0, 0.86 + 0.28 * patchN, uDetail);
+  // close-ups: summer steppe greens on the lower ground, a green valley floor where flattened
+  landCol = mix(landCol, vec3(0.38, 0.52, 0.24) * (0.85 + 0.3 * patchN), uDetail * 0.38 * (1.0 - smoothstep(0.22, 0.5, t.r)));
+  landCol = mix(landCol, vec3(0.42, 0.56, 0.26) * (0.9 + 0.2 * patchN), vFlat * 0.6);
+  landCol = mix(landCol, landCol * vec3(0.92, 1.06, 0.9), uDetail * smoothstep(0.55, 0.75, patchN) * (1.0 - smoothstep(0.15, 0.4, t.r)));
   landCol *= shade;
 
   // Sea: light near the coast, deeper further out, with a soft bright edge at the shore
@@ -136,10 +214,11 @@ void main() {
 
     // border line where the empire meets land it hasn't reached yet
     vec2 o = uTexel * 2.2;
-    float nIn = min(min(insideAt(vUv + vec2(o.x, 0.0)), insideAt(vUv - vec2(o.x, 0.0))),
-                    min(insideAt(vUv + vec2(0.0, o.y)), insideAt(vUv - vec2(0.0, o.y))));
+    // water next to the empire doesn't count as a border (only land it hasn't reached)
+    #define NB(off) max(insideAt(vUv + off), 1.0 - landAt(vUv + off))
+    float nIn = min(min(NB(vec2(o.x, 0.0)), NB(-vec2(o.x, 0.0))), min(NB(vec2(0.0, o.y)), NB(-vec2(0.0, o.y))));
     float border = inside * (1.0 - nIn) * landAt(vUv);
-    col = mix(col, vec3(0.42, 0.04, 0.03), border * 0.85);
+    col = mix(col, mix(vec3(0.42, 0.04, 0.03), vec3(1.0, 0.78, 0.3), uBorderGlow), border * 0.9);
   }
 
   gl_FragColor = vec4(col, 1.0);
@@ -223,7 +302,13 @@ export const EurasiaMap: React.FC<{
   empireOpacity?: number;
   /** 0..1 make the whole empire glow amber */
   shine?: number;
-}> = ({ textures, progress, glow, empireOpacity = 0.66, shine = 0 }) => {
+  /** 0..1 fine terrain detail (use when the camera is close) */
+  detail?: number;
+  /** 0..1 make the empire's border glow gold */
+  borderGlow?: number;
+  /** flatten the ground in a circle (world x, y, radius, height, amount 0..1) */
+  flat?: { x: number; y: number; radius: number; height: number; amount: number };
+}> = ({ textures, progress, glow, empireOpacity = 0.66, shine = 0, detail = 0, borderGlow = 0, flat }) => {
   const terrainGeometry = useMemo(() => new THREE.PlaneGeometry(MAP_W, MAP_H, 1024, 440), []);
 
   const terrainMaterial = useMemo(() => {
@@ -241,12 +326,16 @@ export const EurasiaMap: React.FC<{
         uWaves: { value: WAVES.length },
         uGlow: { value: 0 },
         uShine: { value: 0 },
-        uEmpireOpacity: { value: empireOpacity },
+        uEmpireOpacity: { value: 0.66 },
+        uDetail: { value: 0 },
+        uBorderGlow: { value: 0 },
+        uFlat: { value: new THREE.Vector4(0, 0, 1, 0) },
+        uFlatAmt: { value: 0 },
       },
       vertexShader: TERRAIN_VERT,
       fragmentShader: TERRAIN_FRAG,
     });
-  }, [textures, empireOpacity]);
+  }, [textures]);
 
   const sides = useMemo(() => {
     const mk = (geometry: THREE.BufferGeometry, shade: number) => ({
@@ -275,6 +364,11 @@ export const EurasiaMap: React.FC<{
   terrainMaterial.uniforms.uProgress.value = progress;
   terrainMaterial.uniforms.uGlow.value = glow;
   terrainMaterial.uniforms.uShine.value = shine;
+  terrainMaterial.uniforms.uEmpireOpacity.value = empireOpacity;
+  terrainMaterial.uniforms.uDetail.value = detail;
+  terrainMaterial.uniforms.uBorderGlow.value = borderGlow;
+  if (flat) terrainMaterial.uniforms.uFlat.value.set(flat.x, flat.y, flat.radius, flat.height);
+  terrainMaterial.uniforms.uFlatAmt.value = flat ? flat.amount : 0;
 
   return (
     <group>

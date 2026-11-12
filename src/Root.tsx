@@ -4,6 +4,7 @@ import { MainVideo, MainVideoProps } from "./MainVideo";
 import { SteppeNight } from "./mongol/SteppeNight";
 import { Scene1 } from "./mongol/Scene1";
 import { Scene2, SCENE2_FRAMES } from "./mongol/Scene2";
+import { Scene3, SCENE3_FRAMES } from "./mongol/Scene3";
 import { MongolVideo, MONGOL_VIDEO_FRAMES } from "./mongol/MongolVideo";
 
 const FPS = 30;
@@ -73,6 +74,14 @@ export const RemotionRoot: React.FC = () => {
         width={1920}
         height={1080}
         durationInFrames={SCENE2_FRAMES}
+      />
+      <Composition
+        id="Scene3"
+        component={Scene3}
+        fps={FPS}
+        width={1920}
+        height={1080}
+        durationInFrames={SCENE3_FRAMES}
       />
       <Composition
         id="MongolTest"

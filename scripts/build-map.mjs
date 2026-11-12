@@ -115,6 +115,36 @@ const blur = (src, r, passes) => {
   return a;
 };
 
+// Inland lakes (water not connected to the map edge): give each a flat surface at the
+// height of its shore, so lakes sit in the land instead of dropping to sea level.
+const lakeLevel = new Float32Array(N).fill(-1);
+{
+  const seen = new Uint8Array(N);
+  for (let start = 0; start < N; start++) {
+    if (land[start] || seen[start]) continue;
+    const comp = [start];
+    seen[start] = 1;
+    let touchesEdge = false;
+    const shore = [];
+    for (let q = 0; q < comp.length; q++) {
+      const k = comp[q], i = k % W, j = (k - i) / W;
+      if (i === 0 || j === 0 || i === W - 1 || j === H - 1) touchesEdge = true;
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const ii = i + di, jj = j + dj;
+        if (ii < 0 || jj < 0 || ii >= W || jj >= H) continue;
+        const kk = jj * W + ii;
+        if (land[kk]) shore.push(height[kk]);
+        else if (!seen[kk]) { seen[kk] = 1; comp.push(kk); }
+      }
+    }
+    if (touchesEdge || shore.length === 0) continue;
+    shore.sort((a, b) => a - b);
+    const level = shore[Math.floor(shore.length * 0.1)];
+    for (const k of comp) lakeLevel[k] = level;
+  }
+  for (let k = 0; k < N; k++) if (lakeLevel[k] >= 0) height[k] = lakeLevel[k];
+}
+
 // Smooth the JPEG height noise a little, and the colours more (painted look).
 const heightSmooth = blur(height, 1, 2);
 const colorSmooth = rgb.map((ch) => blur(ch, 2, 2));
@@ -159,7 +189,7 @@ for (let k = 0; k < N; k++) {
   terrain.data[k * 4] = Math.round((heightSmooth[k] / maxH) * 255);
   terrain.data[k * 4 + 1] = land[k];
   terrain.data[k * 4 + 2] = Math.round(Math.min(1, coastDist[k] / 6) * 255);
-  terrain.data[k * 4 + 3] = 255;
+  terrain.data[k * 4 + 3] = lakeLevel[k] >= 0 ? 200 : 255; // alpha 200 marks inland lakes
   for (let c = 0; c < 3; c++) colorPng.data[k * 4 + c] = Math.round(colorSmooth[c][k]);
   colorPng.data[k * 4 + 3] = 255;
 }

@@ -42,17 +42,17 @@ const COLORS = {
 // ---------- helpers ----------
 
 /** Seeded random numbers, so the scene looks the same every render. */
-const seeded = (seed: number) => () => {
+export const seeded = (seed: number) => () => {
   seed = (seed + 0x6d2b79f5) | 0;
   let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
   t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 
-type HeightFn = (x: number) => number;
+export type HeightFn = (x: number) => number;
 
 /** Pointy mountain range. */
-const mountains = (seed: number, base: number, amp: number, freq: number): HeightFn => {
+export const mountains = (seed: number, base: number, amp: number, freq: number): HeightFn => {
   const r = seeded(seed);
   const p = [r() * 6, r() * 6, r() * 6];
   const peak = (t: number) => 1 - Math.abs(Math.sin(t));
@@ -62,7 +62,7 @@ const mountains = (seed: number, base: number, amp: number, freq: number): Heigh
 };
 
 /** Soft rolling hills. */
-const hills = (seed: number, base: number, amp: number, freq: number): HeightFn => {
+export const hills = (seed: number, base: number, amp: number, freq: number): HeightFn => {
   const r = seeded(seed);
   const p = [r() * 6, r() * 6];
   return (x) => base + amp * (0.7 * Math.sin(x * freq + p[0]) + 0.3 * Math.sin(x * freq * 2.7 + p[1]));
@@ -75,7 +75,7 @@ const RIDER_HILL = hills(5, -2.15, 0.25, 0.22);
 const YURT_GROUND = hills(8, -2.35, 0.12, 0.35);
 const FOREGROUND = hills(21, -2.72, 0.08, 0.9);
 
-const Ridge: React.FC<{ h: HeightFn; z: number; color: string }> = ({ h, z, color }) => {
+export const Ridge: React.FC<{ h: HeightFn; z: number; color: string }> = ({ h, z, color }) => {
   const geometry = useMemo(() => {
     const s = new THREE.Shape();
     const x0 = -60;
@@ -97,7 +97,7 @@ const Ridge: React.FC<{ h: HeightFn; z: number; color: string }> = ({ h, z, colo
 };
 
 /** A flat coloured circle/ellipse. */
-const Blob: React.FC<{
+export const Blob: React.FC<{
   position: [number, number, number];
   scale?: [number, number, number];
   rotation?: number;
@@ -111,7 +111,7 @@ const Blob: React.FC<{
 );
 
 /** A flat rectangle. */
-const Rect: React.FC<{
+export const Rect: React.FC<{
   position: [number, number, number];
   size: [number, number];
   rotation?: number;
@@ -176,7 +176,7 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-const Glow: React.FC<{
+export const Glow: React.FC<{
   position: [number, number, number];
   size: number;
   color: string;
@@ -341,7 +341,7 @@ const Yurt: React.FC<{ x: number; z: number; scale?: number; frame: number; seed
 // ---------- hats ----------
 
 /** Round Mongol-style hat: coloured dome, dark fur brim and a little top knot. */
-const Hat: React.FC<{ position: [number, number, number]; size: number; color: string }> = ({
+export const Hat: React.FC<{ position: [number, number, number]; size: number; color: string }> = ({
   position,
   size,
   color,
@@ -364,7 +364,7 @@ const Leg: React.FC<{ x: number; angle: number }> = ({ x, angle }) => (
   </group>
 );
 
-const Rider: React.FC<{ frame: number; offset: number; hat: string; banner?: boolean }> = ({
+export const Rider: React.FC<{ frame: number; offset: number; hat: string; banner?: boolean }> = ({
   frame,
   offset,
   hat,

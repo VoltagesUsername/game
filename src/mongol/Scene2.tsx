@@ -5,6 +5,7 @@ import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { Blob, Glow, Ridge, Rider, hills, mountains, seeded } from "./SteppeNight";
 import { StandingLeader } from "./characters";
+import { ArcherBand, Part3Cards, SkyClouds } from "./Scene2Part3";
 
 /**
  * Scene 2 - Background & rise to power (0:30-1:10). Parts 1 and 2 so far.
@@ -18,8 +19,11 @@ import { StandingLeader } from "./characters";
 const INTRO = 30; // camera tilts down from the night sky (continues Scene 1's ending)
 const UNIFY = 240; // the 1206 moment
 const PART_2 = 390;
-export const SCENE2_FRAMES = 780;
+const PART_3 = 780; // three advantages: mobility, bow, siege tech
+export const SCENE2_FRAMES = 1230;
 const END = SCENE2_FRAMES;
+const CARDS_EXIT = END - 150; // cards leave, camera tilts up into the clouds
+const TO_WHITE = END - 55; // fade to the white Scene 3 opens with
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const SERIF = "Georgia, 'Times New Roman', serif";
@@ -87,8 +91,8 @@ const Sky: React.FC<{ colors: { top: string; mid: string; horizon: string } }> =
   material.uniforms.uMid.value.set(colors.mid);
   material.uniforms.uHorizon.value.set(colors.horizon);
   return (
-    <mesh position={[0, 4, -40]} material={material}>
-      <planeGeometry args={[160, 90]} />
+    <mesh position={[0, 35, -40]} material={material}>
+      <planeGeometry args={[220, 170]} />
     </mesh>
   );
 };
@@ -155,12 +159,14 @@ const CameraRig: React.FC<{ frame: number }> = ({ frame }) => {
   const { camera } = useThree();
   const t = interpolate(frame, [0, END], [0, 1], { easing: Easing.inOut(Easing.sin) });
   const crane = interpolate(frame, [0, INTRO + 45], [1, 0], { ...clamp, easing: Easing.inOut(Easing.cubic) });
+  // ending: rise and tilt up into the sky (Scene 3 starts in the clouds)
+  const rise = interpolate(frame, [CARDS_EXIT + 20, END], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
   camera.position.set(
     interpolate(t, [0, 1], [-0.8, 0.8]),
-    interpolate(t, [0, 1], [0.1, 0.35]) + crane * 4,
+    interpolate(t, [0, 1], [0.1, 0.35]) + crane * 4 + rise * 5,
     interpolate(t, [0, 1], [10, 9.2]),
   );
-  camera.lookAt(camera.position.x * 0.5, -0.2 + crane * 9, 0);
+  camera.lookAt(camera.position.x * 0.5, -0.2 + crane * 9 + rise * 16, 0);
   return null;
 };
 
@@ -182,6 +188,8 @@ const Landscape: React.FC<{ frame: number; dawn: number; khanRise: number }> = (
       <Ridge h={MID} z={-16} color={c.mid2} />
       <Ridge h={RIDGE} z={-9} color={c.ridge} />
       <GatheringRiders frame={frame} />
+      <ArcherBand frame={frame} start={PART_3 + 5} ridge={RIDGE} />
+      <SkyClouds frame={frame} opacity={interpolate(frame, [PART_3, PART_3 + 60], [0, 1], clamp)} />
       <Khan frame={frame} rise={khanRise} />
       <Ridge h={NEAR} z={-4} color={c.near} />
       <Glow position={[0, NEAR(0) + 0.8, -3.9]} size={5} color="#ffd890" intensity={0.25 * khanRise * dawn} falloff={2} />
@@ -650,7 +658,10 @@ export const Scene2: React.FC = () => {
   const dawn = interpolate(frame, [UNIFY, UNIFY + 100], [0, 1], { ...clamp, easing: Easing.inOut(Easing.sin) });
   const khanRise = spring({ frame: frame - (UNIFY + 50), fps, config: { damping: 16, stiffness: 60 } });
   const fromNight = interpolate(frame, [0, INTRO], [1, 0], { ...clamp, easing: Easing.out(Easing.quad) });
-  const part2Dim = interpolate(frame, [PART_2 - 10, PART_2 + 20], [0, 1], clamp);
+  const part2Dim =
+    interpolate(frame, [PART_2 - 10, PART_2 + 20], [0, 1], clamp) * interpolate(frame, [PART_3 - 10, PART_3 + 30, CARDS_EXIT, CARDS_EXIT + 40], [1, 0.55, 0.55, 0], clamp);
+  const part2Out = interpolate(frame, [PART_3 - 15, PART_3 + 15], [1, 0], { ...clamp, easing: Easing.in(Easing.cubic) });
+  const toWhite = interpolate(frame, [TO_WHITE, END], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
 
   // little screen shake on each clash
   let shake = 0;
@@ -694,13 +705,22 @@ export const Scene2: React.FC = () => {
         <ClanEmblems frame={frame} />
         <Shockwave frame={frame} />
         <UnifiedBanner frame={frame} />
-        <Part2 frame={frame} />
+        {part2Out > 0 && (
+          <g opacity={part2Out} transform={`translate(0 ${(1 - part2Out) * -80})`}>
+            <Part2 frame={frame} />
+          </g>
+        )}
       </svg>
 
       <Part1Text frame={frame} />
       {/* opens on the same night colour Scene 1 ends on */}
       <AbsoluteFill style={{ backgroundColor: NIGHT.top, opacity: fromNight }} />
-      <Part2Title frame={frame} />
+      <div style={{ opacity: part2Out }}>
+        <Part2Title frame={frame} />
+      </div>
+      <Part3Cards frame={frame} start={PART_3} exit={CARDS_EXIT} />
+      {/* fade to soft white: Scene 3 opens by dropping out of these clouds */}
+      <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: toWhite }} />
     </AbsoluteFill>
   );
 };

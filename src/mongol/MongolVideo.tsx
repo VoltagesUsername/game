@@ -4,12 +4,13 @@ import { Scene2, SCENE2_FRAMES } from "./Scene2";
 import { Scene3, SCENE3_FRAMES } from "./Scene3";
 import { Scene4, SCENE4_FRAMES } from "./Scene4";
 import { Scene5, SCENE5_FRAMES } from "./Scene5";
+import { Scene6, SCENE6_FRAMES } from "./Scene6";
 
 // Scene 4 starts on the same map Scene 3 ends on: they crossfade over this many frames
 const CROSSFADE_3_4 = 30;
 
 /** All finished scenes back to back. Add new scenes here as they are made. */
-export const MONGOL_VIDEO_FRAMES = SCENE1_FRAMES + SCENE2_FRAMES + SCENE3_FRAMES + SCENE4_FRAMES - CROSSFADE_3_4 + SCENE5_FRAMES;
+export const MONGOL_VIDEO_FRAMES = SCENE1_FRAMES + SCENE2_FRAMES + SCENE3_FRAMES + SCENE4_FRAMES - CROSSFADE_3_4 + SCENE5_FRAMES + SCENE6_FRAMES;
 
 export const MongolVideo: React.FC = () => (
   <Series>
@@ -27,6 +28,9 @@ export const MongolVideo: React.FC = () => (
     </Series.Sequence>
     <Series.Sequence durationInFrames={SCENE5_FRAMES}>
       <Scene5 />
+    </Series.Sequence>
+    <Series.Sequence durationInFrames={SCENE6_FRAMES}>
+      <Scene6 />
     </Series.Sequence>
   </Series>
 );

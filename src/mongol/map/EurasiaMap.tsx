@@ -14,7 +14,7 @@ export const EXAGGERATION = 3.2;
 export const LAND_LIFT = 0.06; // land sits slightly above the sea, like a model
 const BASE_DEPTH = 6.5; // thickness of the block
 
-export type MapTextures = { terrain: THREE.Texture; color: THREE.Texture; empire: THREE.Texture };
+export type MapTextures = { terrain: THREE.Texture; color: THREE.Texture; empire: THREE.Texture; khanates: THREE.Texture };
 
 /** Load the map images. Call this OUTSIDE <ThreeCanvas> and only render the canvas once loaded. */
 export const useMapTextures = (): MapTextures | null => {
@@ -23,8 +23,8 @@ export const useMapTextures = (): MapTextures | null => {
   useEffect(() => {
     const loader = new THREE.TextureLoader();
     const load = (file: string) => loader.loadAsync(staticFile(file));
-    Promise.all([load("map/terrain.png"), load("map/color.png"), load("map/empire.png")])
-      .then(([terrain, color, empire]) => {
+    Promise.all([load("map/terrain.png"), load("map/color.png"), load("map/empire.png"), load("map/khanates.png")])
+      .then(([terrain, color, empire, khanates]) => {
         for (const t of [terrain, empire]) {
           t.colorSpace = THREE.NoColorSpace;
           t.generateMipmaps = false;
@@ -33,7 +33,12 @@ export const useMapTextures = (): MapTextures | null => {
         }
         color.colorSpace = THREE.SRGBColorSpace;
         color.anisotropy = 8;
-        setTextures({ terrain, color, empire });
+        // which khanate each cell belongs to (ids must not blend)
+        khanates.colorSpace = THREE.NoColorSpace;
+        khanates.generateMipmaps = false;
+        khanates.minFilter = THREE.NearestFilter;
+        khanates.magFilter = THREE.NearestFilter;
+        setTextures({ terrain, color, empire, khanates });
         continueRender(handle);
       })
       .catch((e) => cancelRender(e));
@@ -124,8 +129,22 @@ uniform float uEmpireOpacity;
 uniform float uShine;     // 0..1, whole empire glows amber
 uniform float uDetail;    // 0..1, fine terrain detail for close-ups
 uniform float uBorderGlow;// 0..1, empire border glows gold
+// decline of the empire (Scene 6)
+uniform sampler2D uKhanate;
+uniform float uSplit;     // 0..1 recolour into the four khanates
+uniform float uCrack;     // 0..1 glowing cracks between khanates, opening into gaps
+uniform vec4 uAssim;      // per khanate 0..1: colour fades into the local land (Yuan, Horde, Ilkhanate, Chagatai)
+uniform vec4 uPlague;     // uv centre x, y, radius, strength
+uniform float uYuanFade;  // 0..1 the Yuan colour retreats north to Mongolia
+uniform float uShatter;   // 0..1 cracks shatter the Yuan region
 varying vec2 vUv;
 varying float vFlat;
+
+float kidAt(vec2 uv) { return floor(texture2D(uKhanate, uv).r * 255.0 / 60.0 + 0.5); }
+vec3 khanColor(float k) {
+  return k < 1.5 ? vec3(0.18, 0.4, 0.85) : k < 2.5 ? vec3(0.16, 0.6, 0.3) : k < 3.5 ? vec3(0.55, 0.28, 0.75) : vec3(0.95, 0.55, 0.12);
+}
+float assimOf(float k) { return k < 1.5 ? uAssim.x : k < 2.5 ? uAssim.y : k < 3.5 ? uAssim.z : uAssim.w; }
 
 // --- small value-noise helpers for close-up detail ---
 float hash2(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
@@ -210,8 +229,20 @@ void main() {
     float ahead = uProgress - p;
     float w = max(fwidth(p) * 1.2, 0.003);
     float inside = smoothstep(-w, w, ahead) * land;
-    vec3 empire = vec3(0.72, 0.09, 0.06) * (0.6 + 0.62 * diffuse);
-    col = mix(col, empire, inside * uEmpireOpacity);
+    vec3 baseC = vec3(0.72, 0.09, 0.06);
+    float tint = uEmpireOpacity;
+    float kid = kidAt(vUv);
+    if (uSplit > 0.0 && kid > 0.5) {
+      baseC = mix(baseC, khanColor(kid), uSplit);
+      tint *= 1.0 - assimOf(kid) * 0.8;
+      if (kid < 1.5) {
+        float lat = ${MAP.lat0}.0 + vUv.y * ${MAP.lat1 - MAP.lat0}.0;
+        float line = mix(10.0, 43.5, uYuanFade);
+        tint *= smoothstep(line - 0.8, line + 0.8, lat);
+      }
+    }
+    vec3 empire = baseC * (0.6 + 0.62 * diffuse);
+    col = mix(col, empire, inside * tint);
     float front = exp(-max(ahead, 0.0) / 0.05) * inside;
     col += vec3(1.0, 0.68, 0.25) * front * uGlow * 0.9;
     col = mix(col, vec3(1.0, 0.62, 0.2) * (0.55 + 0.6 * diffuse), inside * uShine * 0.55);
@@ -223,6 +254,37 @@ void main() {
     float nIn = min(min(NB(vec2(o.x, 0.0)), NB(-vec2(o.x, 0.0))), min(NB(vec2(0.0, o.y)), NB(-vec2(0.0, o.y))));
     float border = inside * (1.0 - nIn) * landAt(vUv);
     col = mix(col, mix(vec3(0.42, 0.04, 0.03), vec3(1.0, 0.78, 0.3), uBorderGlow), border * 0.9);
+
+    // cracks between khanates: glowing, then opening into dark gaps
+    if (uCrack > 0.0 && kid > 0.5) {
+      vec2 off = uTexel * (1.5 + uCrack * 2.5);
+      vec2 jit = (vec2(vnoise(vUv * 900.0), vnoise(vUv * 900.0 + 7.0)) - 0.5) * uTexel * 6.0;
+      float k1 = kidAt(vUv + jit + vec2(off.x, 0.0)), k2 = kidAt(vUv + jit - vec2(off.x, 0.0));
+      float k3 = kidAt(vUv + jit + vec2(0.0, off.y)), k4 = kidAt(vUv + jit - vec2(0.0, off.y));
+      float edge = (abs(k1 - kid) + abs(k2 - kid) + abs(k3 - kid) + abs(k4 - kid)) > 0.5 ? 1.0 : 0.0;
+      edge *= step(0.5, min(min(k1, k2), min(k3, k4))) * inside;
+      float gap = smoothstep(0.6, 1.0, uCrack);
+      col = mix(col, vec3(1.0, 0.5, 0.15) * 1.25, edge * (1.0 - gap) * smoothstep(0.0, 0.2, uCrack));
+      col = mix(col, vec3(0.07, 0.02, 0.02), edge * gap);
+    }
+    // the Yuan shatters (1368)
+    if (uShatter > 0.0 && kid > 0.5 && kid < 1.5) {
+      float n = fbm(vUv * vec2(${MAP.width}.0, ${MAP.height}.0) * 0.04);
+      float lines = 1.0 - smoothstep(0.0, 0.055, abs(fract(n * 7.0) - 0.5));
+      col = mix(col, vec3(1.0, 0.62, 0.25) * 1.3, lines * uShatter * inside);
+    }
+  }
+
+  // the Black Death spreading out from Central Asia
+  if (uPlague.w > 0.0) {
+    vec2 pp = vec2(vUv.x * ${(MAP_W / MAP_H).toFixed(4)}, vUv.y);
+    vec2 pc = vec2(uPlague.x * ${(MAP_W / MAP_H).toFixed(4)}, uPlague.y);
+    float d = distance(pp, pc) + (fbm(vUv * 60.0) - 0.5) * 0.08;
+    float m = smoothstep(uPlague.z, uPlague.z - 0.07, d) * uPlague.w * mix(0.35, 1.0, landAt(vUv));
+    vec3 grey = vec3(dot(col, vec3(0.3, 0.5, 0.2)));
+    col = mix(col, grey * vec3(0.6, 0.36, 0.36), m * 0.85);
+    float front = exp(-pow((d - uPlague.z) / 0.01, 2.0)) * uPlague.w * step(0.01, uPlague.z) * landAt(vUv);
+    col += vec3(0.45, 0.04, 0.03) * front * 0.7;
   }
 
   gl_FragColor = vec4(col, 1.0);
@@ -312,7 +374,16 @@ export const EurasiaMap: React.FC<{
   borderGlow?: number;
   /** flatten the ground in a circle (world x, y, radius, height, amount 0..1) */
   flat?: { x: number; y: number; radius: number; height: number; amount: number };
-}> = ({ textures, progress, glow, empireOpacity = 0.66, shine = 0, detail = 0, borderGlow = 0, flat }) => {
+  /** Scene 6: break-up of the empire */
+  decline?: {
+    split: number;
+    crack: number;
+    assim: [number, number, number, number];
+    plague: [number, number, number, number];
+    yuanFade: number;
+    shatter: number;
+  };
+}> = ({ textures, progress, glow, empireOpacity = 0.66, shine = 0, detail = 0, borderGlow = 0, flat, decline }) => {
   const terrainGeometry = useMemo(() => new THREE.PlaneGeometry(MAP_W, MAP_H, 1024, 440), []);
 
   const terrainMaterial = useMemo(() => {
@@ -335,6 +406,13 @@ export const EurasiaMap: React.FC<{
         uBorderGlow: { value: 0 },
         uFlat: { value: new THREE.Vector4(0, 0, 1, 0) },
         uFlatAmt: { value: 0 },
+        uKhanate: { value: textures.khanates },
+        uSplit: { value: 0 },
+        uCrack: { value: 0 },
+        uAssim: { value: new THREE.Vector4() },
+        uPlague: { value: new THREE.Vector4() },
+        uYuanFade: { value: 0 },
+        uShatter: { value: 0 },
       },
       vertexShader: TERRAIN_VERT,
       fragmentShader: TERRAIN_FRAG,
@@ -373,6 +451,13 @@ export const EurasiaMap: React.FC<{
   terrainMaterial.uniforms.uBorderGlow.value = borderGlow;
   if (flat) terrainMaterial.uniforms.uFlat.value.set(flat.x, flat.y, flat.radius, flat.height);
   terrainMaterial.uniforms.uFlatAmt.value = flat ? flat.amount : 0;
+  const u = terrainMaterial.uniforms;
+  u.uSplit.value = decline?.split ?? 0;
+  u.uCrack.value = decline?.crack ?? 0;
+  u.uAssim.value.set(...(decline?.assim ?? [0, 0, 0, 0]));
+  u.uPlague.value.set(...(decline?.plague ?? [0, 0, 0, 0]));
+  u.uYuanFade.value = decline?.yuanFade ?? 0;
+  u.uShatter.value = decline?.shatter ?? 0;
 
   return (
     <group>

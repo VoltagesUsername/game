@@ -39,7 +39,7 @@ type LL = [number, number];
 
 // ---------- the routes (east -> west) ----------
 
-const MAIN: { at: LL; name?: string; sub?: string }[] = [
+export const MAIN: { at: LL; name?: string; sub?: string }[] = [
   { at: [116.4, 39.9], name: "Khanbaliq", sub: "Beijing" },
   { at: [112.6, 37.9] },
   { at: [108.9, 34.3], name: "Xi'an" },
@@ -63,8 +63,8 @@ const MAIN: { at: LL; name?: string; sub?: string }[] = [
   { at: [34.5, 41.4] },
   { at: [28.97, 41.0], name: "Constantinople" },
 ];
-const SEA_TO_VENICE: LL[] = [[28.97, 41.0], [26.4, 40.2], [24.6, 38.4], [21.6, 37.2], [19.4, 39.4], [17.2, 41.6], [14.6, 43.6], [12.3, 45.4]];
-const NORTH: { at: LL; name?: string }[] = [
+export const SEA_TO_VENICE: LL[] = [[28.97, 41.0], [26.4, 40.2], [24.6, 38.4], [21.6, 37.2], [19.4, 39.4], [17.2, 41.6], [14.6, 43.6], [12.3, 45.4]];
+export const NORTH: { at: LL; name?: string }[] = [
   { at: [66.97, 39.65] },
   { at: [62.8, 41.0] },
   { at: [60.6, 41.55] },
@@ -77,7 +77,7 @@ const NORTH: { at: LL; name?: string }[] = [
 ];
 const SEA_CAFFA: LL[] = [[35.4, 45.0], [33.6, 43.2], [30.6, 41.9], [28.97, 41.0]];
 
-const pathFrom = (h: HeightFn, pts: LL[], lift: number, samples = 600) => {
+export const pathFrom = (h: HeightFn, pts: LL[], lift: number, samples = 600) => {
   const rough = new THREE.CatmullRomCurve3(pts.map(([lon, lat]) => new THREE.Vector3(...project(lon, lat), 0)), false, "centripetal");
   const dense = rough.getSpacedPoints(samples).map((q) => {
     const lon = (q.x / Math.cos((40 * Math.PI) / 180)) + 70;
@@ -108,6 +108,7 @@ uniform float uTime;
 uniform float uDashed;
 uniform float uOpacity;
 uniform float uHalo;
+uniform float uDark;
 varying vec2 vUv;
 void main() {
   float along = vUv.x;
@@ -119,15 +120,16 @@ void main() {
   vec3 col = base + vec3(1.0, 0.95, 0.75) * flow * 0.6;
   float tip = smoothstep(0.03, 0.0, uProgress - along) * step(uProgress, 0.999);
   col += vec3(1.0, 0.9, 0.6) * tip;
+  col = mix(col, vec3(0.28, 0.05, 0.04) + vec3(0.2, 0.0, 0.0) * flow, uDark);
   float a = uOpacity;
-  if (uHalo > 0.5) { col = vec3(1.0, 0.75, 0.3); a *= 0.25 + 0.15 * flow; }
+  if (uHalo > 0.5) { col = mix(vec3(1.0, 0.75, 0.3), vec3(0.4, 0.02, 0.02), uDark); a *= 0.25 + 0.15 * flow; }
   gl_FragColor = vec4(col, a);
   #include <colorspace_fragment>
 }`;
 
 const roadMaterial = (halo: boolean) =>
   new THREE.ShaderMaterial({
-    uniforms: { uProgress: { value: 0 }, uTime: { value: 0 }, uDashed: { value: 0 }, uOpacity: { value: 1 }, uHalo: { value: halo ? 1 : 0 } },
+    uniforms: { uProgress: { value: 0 }, uTime: { value: 0 }, uDashed: { value: 0 }, uOpacity: { value: 1 }, uHalo: { value: halo ? 1 : 0 }, uDark: { value: 0 } },
     vertexShader: ROAD_VERT,
     fragmentShader: ROAD_FRAG,
     transparent: true,
@@ -135,8 +137,8 @@ const roadMaterial = (halo: boolean) =>
     blending: halo ? THREE.AdditiveBlending : THREE.NormalBlending,
   });
 
-const Road: React.FC<{ curve: THREE.CatmullRomCurve3; radius: number; progress: number; frame: number; dashed?: boolean; opacity?: number }> = ({
-  curve, radius, progress, frame, dashed, opacity = 1,
+export const Road: React.FC<{ curve: THREE.CatmullRomCurve3; radius: number; progress: number; frame: number; dashed?: boolean; opacity?: number; dark?: number }> = ({
+  curve, radius, progress, frame, dashed, opacity = 1, dark = 0,
 }) => {
   const { core, halo, coreMat, haloMat } = useMemo(
     () => ({
@@ -152,6 +154,7 @@ const Road: React.FC<{ curve: THREE.CatmullRomCurve3; radius: number; progress: 
     m.uniforms.uTime.value = frame / 10;
     m.uniforms.uDashed.value = dashed ? 1 : 0;
     m.uniforms.uOpacity.value = opacity;
+    m.uniforms.uDark.value = dark;
   }
   if (progress <= 0 || opacity <= 0.01) return null;
   return (

@@ -360,13 +360,27 @@ export const Hat: React.FC<{ position: [number, number, number]; size: number; c
 // ---------- riders ----------
 
 /** Rider on horseback (detailed version lives in characters.tsx). */
-export const Rider: React.FC<{ frame: number; offset: number; hat: string; banner?: boolean; robe?: string }> = ({
-  frame,
-  offset,
-  hat,
-  banner,
-  robe,
-}) => <DetailedRider frame={frame} offset={offset} hat={hat} banner={banner} robe={robe ?? (hat === COLORS.gold ? "#a8302a" : "#2f5aa8")} />;
+export const Rider: React.FC<{
+  frame: number;
+  offset: number;
+  hat: string;
+  banner?: boolean;
+  robe?: string;
+  pose?: "reins" | "draw";
+  armor?: boolean;
+  mustache?: boolean;
+}> = ({ frame, offset, hat, banner, robe, pose, armor, mustache }) => (
+  <DetailedRider
+    frame={frame}
+    offset={offset}
+    hat={hat}
+    banner={banner}
+    robe={robe ?? (hat === COLORS.gold ? "#a8302a" : "#2f5aa8")}
+    pose={pose}
+    armor={armor}
+    mustache={mustache}
+  />
+);
 
 // ---------- campfire + people ----------
 

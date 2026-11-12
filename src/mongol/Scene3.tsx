@@ -6,7 +6,7 @@ import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoCon
 import { EurasiaMap, SUN, useHeightSampler, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
 import { Glow, seeded } from "./SteppeNight";
-import { CITY_SCALE, CampsAndHerds, Countryside, KarakorumCity, Roads, Surroundings, Traffic } from "./karakorum";
+import { CITY_SCALE, CampsAndHerds, Countryside, CountryPeople, KarakorumCity, Roads, Surroundings, Traffic } from "./karakorum";
 
 /**
  * Scene 3 - Base & geographic reach (1:10-1:50, 40 s)
@@ -506,6 +506,7 @@ export const Scene3: React.FC = () => {
               <Traffic s={surroundings} frame={frame} />
               <CampsAndHerds s={surroundings} frame={frame} />
               <Countryside s={surroundings} river={river} />
+              <CountryPeople s={surroundings} frame={frame} />
             </group>
           )}
           {/* catches building shadows on the valley floor */}

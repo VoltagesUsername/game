@@ -147,7 +147,7 @@ const GatheringRiders: React.FC<{ frame: number }> = ({ frame }) => {
         const f = t < 0.98 ? frame : still;
         return (
           <group key={i} position={[x, RIDGE(x) - 0.05, -8.9 + i * 0.02]} scale={[0.7 * dir, 0.7, 0.7]}>
-            <Rider frame={f} offset={offset} hat={r.hat} robe={r.robe} banner={i === 0} />
+            <Rider frame={f} offset={offset} hat={r.hat} robe={r.robe} banner={i === 0} armor={i % 2 === 0} mustache={i !== 2} />
           </group>
         );
       })}
@@ -659,7 +659,7 @@ export const Scene2: React.FC = () => {
   const khanRise = spring({ frame: frame - (UNIFY + 50), fps, config: { damping: 16, stiffness: 60 } });
   const fromNight = interpolate(frame, [0, INTRO], [1, 0], { ...clamp, easing: Easing.out(Easing.quad) });
   const part2Dim =
-    interpolate(frame, [PART_2 - 10, PART_2 + 20], [0, 1], clamp) * interpolate(frame, [PART_3 - 10, PART_3 + 30, CARDS_EXIT, CARDS_EXIT + 40], [1, 0.55, 0.55, 0], clamp);
+    interpolate(frame, [PART_2 - 10, PART_2 + 20], [0, 1], clamp) * interpolate(frame, [PART_3 - 10, PART_3 + 30, CARDS_EXIT, CARDS_EXIT + 40], [1, 0.4, 0.4, 0], clamp);
   const part2Out = interpolate(frame, [PART_3 - 15, PART_3 + 15], [1, 0], { ...clamp, easing: Easing.in(Easing.cubic) });
   const toWhite = interpolate(frame, [TO_WHITE, END], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
 

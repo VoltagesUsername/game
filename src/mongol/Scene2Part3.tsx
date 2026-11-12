@@ -25,18 +25,19 @@ export const ArcherBand: React.FC<{ frame: number; start: number; ridge: (x: num
   const riders = useMemo(() => {
     const r = seeded(55);
     const robes = ["#2f5aa8", "#a8302a", "#3d7a4a", "#6a3d8a", "#c9892f", "#2f5aa8", "#a8302a"];
-    return robes.map((robe, i) => ({ robe, delay: i * 14 + r() * 8, lane: r() * 0.4, offset: r() * 6, hat: i % 2 ? "#ffc94d" : "#c8332b" }));
+    return robes.map((robe, i) => ({ robe, delay: i * 24 + r() * 10, lane: r() * 0.4, offset: r() * 6, hat: i % 2 ? "#ffc94d" : "#c8332b" }));
   }, []);
   if (frame < start) return null;
   return (
     <>
       {riders.map((r, i) => {
-        const t = (frame - start - r.delay) / 330;
+        const t = (frame - start - r.delay) / 300;
         if (t < 0 || t > 1) return null;
-        const x = interpolate(t, [0, 1], [-17, 19]);
+        // foreground: they gallop along the bottom of the frame, below the cards
+        const x = interpolate(t, [0, 1], [-11, 11]);
         return (
-          <group key={i} position={[x, ridge(x) - 0.05 - r.lane * 0.3, -8.4 + r.lane]} scale={0.66}>
-            <Rider frame={frame} offset={r.offset} hat={r.hat} robe={r.robe} banner={i === 2} />
+          <group key={i} position={[x, -3.2 + r.lane * 0.2 + ridge(x) * 0, -2.1 - r.lane * 0.8]} scale={0.8}>
+            <Rider frame={frame} offset={r.offset} hat={r.hat} robe={r.robe} banner={i === 2} pose={i === 2 ? "reins" : "draw"} armor={i % 3 !== 1} mustache={i % 2 === 0} />
           </group>
         );
       })}
@@ -236,7 +237,7 @@ export const Part3Cards: React.FC<{ frame: number; start: number; exit: number }
   const header = interpolate(frame, [start + 10, start + 35], [0, 1], clamp) * interpolate(frame, [exit, exit + 25], [1, 0], clamp);
   return (
     <>
-      <div style={{ position: "absolute", top: 70, width: "100%", textAlign: "center", color: CREAM, opacity: header, textShadow: "0 4px 24px rgba(0,20,40,0.6)" }}>
+      <div style={{ position: "absolute", top: 50, width: "100%", textAlign: "center", color: CREAM, opacity: header, textShadow: "0 4px 24px rgba(0,20,40,0.6)" }}>
         <div style={{ fontFamily: SANS, fontSize: 24, letterSpacing: "0.45em", opacity: 0.85 }}>AN UNSTOPPABLE FORCE</div>
         <div style={{ fontFamily: SERIF, fontSize: 60, marginTop: 8 }}>Three advantages</div>
       </div>
@@ -254,9 +255,9 @@ export const Part3Cards: React.FC<{ frame: number; start: number; exit: number }
             style={{
               position: "absolute",
               left: x - 270,
-              top: 330,
+              top: 250,
               width: 540,
-              height: 520,
+              height: 480,
               borderRadius: 30,
               background: "linear-gradient(180deg, rgba(14,36,60,0.78), rgba(8,22,40,0.82))",
               backdropFilter: "blur(16px)",
@@ -271,10 +272,10 @@ export const Part3Cards: React.FC<{ frame: number; start: number; exit: number }
             <div style={{ position: "absolute", top: 22, left: 26, fontFamily: SANS, fontWeight: 800, fontSize: 22, letterSpacing: "0.2em", color: GOLD }}>
               0{i + 1}
             </div>
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 48, transform: "scale(1.45)", transformOrigin: "50% 0%" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 40, transform: "scale(1.4)", transformOrigin: "50% 0%" }}>
               <c.Icon f={Math.max(0, local)} />
             </div>
-            <div style={{ position: "absolute", left: 0, right: 0, top: 300, textAlign: "center", padding: "0 30px" }}>
+            <div style={{ position: "absolute", left: 0, right: 0, top: 282, textAlign: "center", padding: "0 30px" }}>
               <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 44, lineHeight: 1.1 }}>{c.title}</div>
               <div style={{ fontFamily: SANS, fontSize: 25, marginTop: 14, opacity: 0.85, lineHeight: 1.3 }}>{c.sub}</div>
               <div

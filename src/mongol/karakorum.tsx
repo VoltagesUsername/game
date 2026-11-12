@@ -377,6 +377,8 @@ export const KarakorumCity: React.FC<{ frame: number }> = ({ frame }) => {
         </group>
       ))}
 
+      <CityPeople frame={frame} />
+
       {/* cooking smoke */}
       {smoke.map(([x, y], i) => (
         <group key={i}>
@@ -597,5 +599,252 @@ export const Countryside: React.FC<{ s: Surroundings; river: THREE.Vector3[] }> 
         <Part g={geo.sphere} p={[0.62, 0, 0.3]} s={[0.16, 0.12, 0.11]} c="#9a9a92" />
       </group>
     </>
+  );
+};
+
+// ======================================================================
+// People
+// ======================================================================
+
+const personGeo = (() => {
+  const robe = new THREE.CylinderGeometry(0.62, 1, 1, 10);
+  robe.rotateX(Math.PI / 2);
+  robe.translate(0, 0, 0.5);
+  return { robe };
+})();
+
+const SKIN = "#3a2a20";
+
+/** A tiny 3D person (about 0.05 city units tall): deel, sash, arms, head and hat, optional spear. */
+const TinyPerson: React.FC<{
+  p: V3;
+  heading: number;
+  robe: string;
+  hat?: string;
+  /** walk phase (radians) or undefined to stand */
+  walk?: number;
+  spear?: boolean;
+  scale?: number;
+  bareHead?: boolean;
+}> = ({ p, heading, robe, hat = "#c8332b", walk, spear, scale = 0.62, bareHead }) => {
+  const swing = walk === undefined ? 0 : Math.sin(walk) * 0.5;
+  const bob = walk === undefined ? 0 : Math.abs(Math.cos(walk)) * 0.002;
+  return (
+    <group position={p} rotation={[0, 0, heading]} scale={scale}>
+      <group position={[0, 0, bob]}>
+        {/* legs + boots */}
+        {[-1, 1].map((side) => (
+          <group key={side} position={[0, side * 0.004, 0.016]} rotation={[0, side * swing, 0]}>
+            <Part g={geo.box} p={[0, 0, -0.016]} s={[0.005, 0.005, 0.016]} c={BOOT_C} shadow={false} />
+          </group>
+        ))}
+        {/* deel: flared skirt + torso, sash, collar trim */}
+        <Part g={personGeo.robe} p={[0, 0, 0.012]} s={[0.011, 0.011, 0.022]} c={robe} />
+        <Part g={geo.cyl} p={[0, 0, 0.032]} s={[0.0075, 0.0068, 0.012]} c={robe} />
+        <Part g={geo.cyl} p={[0, 0, 0.03]} s={[0.0082, 0.0082, 0.0035]} c="#e08a2a" shadow={false} />
+        <Part g={geo.box} p={[0.006, 0.002, 0.034]} s={[0.002, 0.006, 0.008]} r={0.5} c={GOLD} shadow={false} />
+        {/* arms swing opposite the legs */}
+        {[-1, 1].map((side) => (
+          <group key={side} position={[0, side * 0.0095, 0.043]} rotation={[0, -side * swing * 0.8, 0]}>
+            <Part g={geo.box} p={[0, 0, -0.016]} s={[0.0045, 0.0045, 0.016]} c={robe} shadow={false} />
+            <Part g={geo.sphere} p={[0, 0, -0.017]} s={[0.0028, 0.0028, 0.0028]} c={SKIN} shadow={false} />
+          </group>
+        ))}
+        {/* head + hat */}
+        <Part g={geo.sphere} p={[0, 0, 0.05]} s={[0.0062, 0.0062, 0.0066]} c={SKIN} />
+        {!bareHead && (
+          <>
+            <Part g={geo.cyl} p={[0, 0, 0.053]} s={[0.0085, 0.0085, 0.0028]} c="#6b4a32" shadow={false} />
+            <Part g={geo.cone} p={[0, 0, 0.0555]} s={[0.0068, 0.0068, 0.008]} c={hat} />
+          </>
+        )}
+        {spear && (
+          <group position={[0.004, -0.012, 0]}>
+            <Part g={geo.cyl} p={[0, 0, 0]} s={[0.0012, 0.0012, 0.085]} c="#5a3a20" shadow={false} />
+            <Part g={geo.cone} p={[0, 0, 0.085]} s={[0.0025, 0.0025, 0.01]} c="#dfe6ee" metal={0.8} rough={0.3} shadow={false} />
+            <mesh position={[0, -0.006, 0.075]}>
+              <planeGeometry args={[0.001, 0.012]} />
+              <meshStandardMaterial color="#c8332b" side={THREE.DoubleSide} />
+            </mesh>
+          </group>
+        )}
+      </group>
+    </group>
+  );
+};
+const BOOT_C = "#3a2414";
+
+/** A tiny horse with rider for the roads and the herds. */
+const TinyRider: React.FC<{ p: V3; heading: number; robe: string; hat: string; frame: number; seed: number; moving?: boolean }> = ({
+  p, heading, robe, hat, frame, seed, moving = true,
+}) => {
+  const ph = moving ? frame * 0.5 + seed : 0;
+  return (
+    <group position={p} rotation={[0, 0, heading]} scale={0.62}>
+      {/* horse */}
+      {[[0.018, -0.005, 0], [0.018, 0.005, 1.6], [-0.018, -0.005, Math.PI], [-0.018, 0.005, Math.PI + 1.6]].map(([x, y, d], i) => (
+        <group key={i} position={[x, y, 0.024]} rotation={[0, Math.sin(ph + d) * 0.5, 0]}>
+          <Part g={geo.box} p={[0, 0, -0.024]} s={[0.005, 0.005, 0.024]} c="#3b261a" shadow={false} />
+        </group>
+      ))}
+      <Part g={geo.sphere} p={[0, 0, 0.032]} s={[0.026, 0.011, 0.011]} c="#4a301f" />
+      <Part g={geo.box} p={[0.026, 0, 0.034]} s={[0.012, 0.007, 0.02]} r={0} c="#4a301f" />
+      <Part g={geo.box} p={[0.034, 0, 0.05]} s={[0.016, 0.007, 0.008]} c="#4a301f" />
+      <Part g={geo.box} p={[-0.028, 0, 0.022]} s={[0.006, 0.003, 0.016]} c="#1a120c" shadow={false} />
+      <Part g={geo.box} p={[0, 0, 0.04]} s={[0.018, 0.024, 0.004]} c="#b8322a" shadow={false} />
+      {/* rider */}
+      <Part g={geo.cyl} p={[0, 0, 0.042]} s={[0.0075, 0.0068, 0.02]} c={robe} />
+      <Part g={geo.box} p={[0.002, -0.009, 0.034]} s={[0.012, 0.004, 0.006]} c={robe} shadow={false} />
+      <Part g={geo.box} p={[0.002, 0.009, 0.034]} s={[0.012, 0.004, 0.006]} c={robe} shadow={false} />
+      <Part g={geo.sphere} p={[0, 0, 0.068]} s={[0.006, 0.006, 0.0065]} c={SKIN} />
+      <Part g={geo.cyl} p={[0, 0, 0.071]} s={[0.0082, 0.0082, 0.0026]} c="#6b4a32" shadow={false} />
+      <Part g={geo.cone} p={[0, 0, 0.0735]} s={[0.0065, 0.0065, 0.008]} c={hat} />
+    </group>
+  );
+};
+
+const ROBES = ["#2f5aa8", "#a8302a", "#3d7a4a", "#6a3d8a", "#c9892f", "#2a6a8a", "#8a4a2a"];
+const HATS = ["#c8332b", "#e6b84a", "#2f5aa8", "#3d7a4a"];
+
+/** People inside the walls: wall guards, gate guards, palace guards, street traffic, market crowd, monks. */
+export const CityPeople: React.FC<{ frame: number }> = ({ frame }) => {
+  const data = useMemo(() => {
+    const r = seeded(515);
+    const guards: { p: V3; h: number }[] = [];
+    // guards walking the wall tops (z = 0.11), facing outward
+    const wallSpots: [number, number, number][] = [];
+    for (const t of [-0.75, -0.4, 0.35, 0.72]) wallSpots.push([t * W, -H, -Math.PI / 2], [t * W, H, Math.PI / 2]);
+    for (const t of [-0.7, -0.35, 0.4, 0.75]) wallSpots.push([-W, t * H, Math.PI], [W, t * H, 0]);
+    wallSpots.forEach(([x, y, h]) => guards.push({ p: [x, y, 0.11], h }));
+    // two guards outside every gate
+    const gateGuards: { p: V3; h: number }[] = [];
+    [[0, -H - 0.09, -Math.PI / 2], [0, H + 0.09, Math.PI / 2], [W + 0.09, 0.06, 0], [-W - 0.09, 0.06, Math.PI]].forEach(([x, y, h]) => {
+      const nx = Math.cos(h + Math.PI / 2) * 0.05, ny = Math.sin(h + Math.PI / 2) * 0.05;
+      gateGuards.push({ p: [x + nx, y + ny, 0.004], h }, { p: [x - nx, y - ny, 0.004], h });
+    });
+    // palace guards in red at the compound gate and the terrace steps
+    const palace: { p: V3; h: number }[] = [
+      { p: [-0.34, -0.77, 0.004], h: -Math.PI / 2 }, { p: [-0.26, -0.77, 0.004], h: -Math.PI / 2 },
+      { p: [-0.35, -0.6, 0.004], h: -Math.PI / 2 }, { p: [-0.25, -0.6, 0.004], h: -Math.PI / 2 },
+    ];
+    // street walkers: along the two main streets, in both directions
+    const walkers = Array.from({ length: 26 }, (_, i) => ({
+      ns: i % 2 === 0,
+      lane: (r() < 0.5 ? -1 : 1) * (0.012 + r() * 0.014),
+      start: r(),
+      speed: (0.0011 + r() * 0.0009) * (r() < 0.5 ? -1 : 1),
+      robe: ROBES[Math.floor(r() * ROBES.length)],
+      hat: HATS[Math.floor(r() * HATS.length)],
+      phase: r() * 6,
+    }));
+    // market crowd milling between the stall rows
+    const market = Array.from({ length: 22 }, () => ({
+      x: 0.12 + r() * 0.36,
+      y: -0.225 - Math.floor(r() * 3) * 0.09 + (r() - 0.5) * 0.02,
+      robe: ROBES[Math.floor(r() * ROBES.length)],
+      hat: HATS[Math.floor(r() * HATS.length)],
+      phase: r() * 6,
+      h: r() * Math.PI * 2,
+    }));
+    // monks by the temple, people at the mosque and church
+    const others = [
+      ...[0, 1, 2, 3].map((k) => ({ p: [-0.3 + k * 0.025, 0.6, 0.004] as V3, h: Math.PI / 2, robe: "#e08a2a", hat: "#a8302a", bare: k % 2 === 0 })),
+      ...[0, 1, 2].map((k) => ({ p: [0.36 + k * 0.025, -0.58, 0.004] as V3, h: Math.PI / 2, robe: "#efe6d2", hat: "#efe6d2", bare: false })),
+      ...[0, 1].map((k) => ({ p: [0.4 + k * 0.025, 0.18, 0.004] as V3, h: Math.PI / 2, robe: "#3a3a4a", hat: "#3a3a4a", bare: true })),
+    ];
+    return { guards, gateGuards, palace, walkers, market, others };
+  }, []);
+
+  return (
+    <group>
+      {data.guards.map((g, i) => (
+        <TinyPerson key={`w${i}`} p={g.p} heading={g.h} robe="#5f6b78" hat="#8a95a2" spear />
+      ))}
+      {data.gateGuards.map((g, i) => (
+        <TinyPerson key={`g${i}`} p={g.p} heading={g.h} robe="#5f6b78" hat="#8a95a2" spear />
+      ))}
+      {data.palace.map((g, i) => (
+        <TinyPerson key={`p${i}`} p={g.p} heading={g.h} robe="#a8302a" hat={GOLD} spear />
+      ))}
+      {data.walkers.map((w, i) => {
+        const span = w.ns ? H * 1.9 : W * 1.9;
+        const u = ((((w.start + frame * w.speed) % 1) + 1) % 1) * span - span / 2;
+        const p: V3 = w.ns ? [w.lane, u, 0.004] : [u, 0.06 + w.lane, 0.004];
+        const heading = w.ns ? (w.speed > 0 ? Math.PI / 2 : -Math.PI / 2) : w.speed > 0 ? 0 : Math.PI;
+        return <TinyPerson key={`s${i}`} p={p} heading={heading} robe={w.robe} hat={w.hat} walk={frame * 0.35 + w.phase} />;
+      })}
+      {data.market.map((m, i) => {
+        const dx = Math.sin(frame * 0.02 + m.phase) * 0.012;
+        return <TinyPerson key={`m${i}`} p={[m.x + dx, m.y, 0.004]} heading={m.h + Math.sin(frame * 0.03 + m.phase) * 0.5} robe={m.robe} hat={m.hat} walk={Math.abs(Math.cos(frame * 0.02 + m.phase)) > 0.5 ? frame * 0.3 + m.phase : undefined} />;
+      })}
+      {data.others.map((o, i) => (
+        <TinyPerson key={`o${i}`} p={o.p} heading={o.h} robe={o.robe} hat={o.hat} bareHead={o.bare} />
+      ))}
+    </group>
+  );
+};
+
+/** People and riders outside the walls (world units). */
+export const CountryPeople: React.FC<{ s: Surroundings; frame: number }> = ({ s, frame }) => {
+  const S = CITY_SCALE;
+  const data = useMemo(() => {
+    const r = seeded(919);
+    // villagers near the ger camps around the walls
+    const folk: { p: V3; h: number; robe: string; hat: string; walk: boolean; phase: number }[] = [];
+    for (let i = 0; i < 40; i++) {
+      const a = r() * Math.PI * 2;
+      const d = 2.0 + r() * 1.8;
+      const x = s.cx + Math.cos(a) * d * 1.05, y = s.cy + Math.sin(a) * d * 1.25;
+      if (x - s.cx < -1.5) continue; // river side
+      if (Math.abs(x - s.cx) < W * S + 0.2 && Math.abs(y - s.cy) < H * S + 0.2) continue;
+      folk.push({ p: [x, y, ground(s, x, y)], h: r() * Math.PI * 2, robe: ROBES[Math.floor(r() * ROBES.length)], hat: HATS[Math.floor(r() * HATS.length)], walk: r() < 0.4, phase: r() * 6 });
+    }
+    // herders riding around the herds
+    const herders = Array.from({ length: 8 }, () => {
+      const a = r() * Math.PI * 2;
+      const d = 3.6 + r() * 4.2;
+      return { cx: s.cx + Math.cos(a) * d * 1.1, cy: s.cy + Math.sin(a) * d, rad: 0.35 + r() * 0.3, phase: r() * 6, robe: ROBES[Math.floor(r() * ROBES.length)], hat: HATS[Math.floor(r() * HATS.length)] };
+    });
+    return { folk, herders };
+  }, [s, S]);
+  // riders on the roads (east road and north road)
+  const roads = useMemo(
+    () => [
+      new THREE.CatmullRomCurve3([[W * S + 0.2, 0.12], [3.2, 0.6], [6.4, 1.4], [9.6, 1.0]].map(([x, y]) => new THREE.Vector3(s.cx + x, s.cy + y, 0))),
+      new THREE.CatmullRomCurve3([[0, H * S + 0.2], [-0.5, 3.6], [-1.4, 6.2], [-2.6, 9.4]].map(([x, y]) => new THREE.Vector3(s.cx + x, s.cy + y, 0))),
+    ],
+    [s, S],
+  );
+  return (
+    <group>
+      {data.folk.map((f, i) => {
+        const dx = f.walk ? Math.cos(f.h) * Math.sin(frame * 0.01 + f.phase) * 0.08 : 0;
+        const dy = f.walk ? Math.sin(f.h) * Math.sin(frame * 0.01 + f.phase) * 0.08 : 0;
+        return (
+          <TinyPerson key={`f${i}`} p={[f.p[0] + dx, f.p[1] + dy, f.p[2]]} heading={f.h} robe={f.robe} hat={f.hat}
+            walk={f.walk ? frame * 0.35 + f.phase : undefined} scale={S * 0.62} />
+        );
+      })}
+      {data.herders.map((h, i) => {
+        const a = frame * 0.006 + h.phase;
+        const x = h.cx + Math.cos(a) * h.rad, y = h.cy + Math.sin(a) * h.rad * 0.7;
+        return <TinyRider key={`h${i}`} p={[x, y, ground(s, x, y)]} heading={a + Math.PI / 2} robe={h.robe} hat={h.hat} frame={frame} seed={i} />;
+      })}
+      {roads.map((curve, k) =>
+        [0, 1, 2].map((j) => {
+          const u = (((frame * 0.0012 + j * 0.3 + k * 0.15) % 1) + 1) % 1;
+          const p = curve.getPointAt(u);
+          const q = curve.getPointAt(Math.min(0.999, u + 0.01));
+          // alternate directions: some ride into the city, some out
+          const outbound = (j + k) % 2 === 0;
+          const heading = Math.atan2(q.y - p.y, q.x - p.x) + (outbound ? 0 : Math.PI);
+          return (
+            <group key={`r${k}${j}`} scale={S}>
+              <TinyRider p={[p.x / S, p.y / S, (ground(s, p.x, p.y) + 0.01) / S]} heading={heading} robe={ROBES[(j + k * 2) % ROBES.length]} hat={HATS[j % HATS.length]} frame={frame} seed={j + k} />
+            </group>
+          );
+        }),
+      )}
+    </group>
   );
 };

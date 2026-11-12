@@ -1,6 +1,7 @@
 import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
 import { getAudioDurationInSeconds } from "@remotion/media-utils";
 import { MainVideo, MainVideoProps } from "./MainVideo";
+import { SteppeNight } from "./mongol/SteppeNight";
 
 const FPS = 30;
 
@@ -45,6 +46,14 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={10 * FPS}
         defaultProps={defaultProps}
         calculateMetadata={calculateMetadata}
+      />
+      <Composition
+        id="MongolTest"
+        component={SteppeNight}
+        fps={FPS}
+        width={1920}
+        height={1080}
+        durationInFrames={10 * FPS}
       />
     </>
   );

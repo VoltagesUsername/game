@@ -18,7 +18,11 @@ import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
 // Part boundaries (frames)
 const PART_B = 300;
 const PART_C = 660;
-const END = 900;
+export const SCENE1_FRAMES = 900;
+const END = SCENE1_FRAMES;
+// Ending: dive toward Mongolia and fade into the night sky Scene 2 opens with
+const DIVE = 830;
+export const SCENE2_NIGHT = "#0d1230";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -74,8 +78,12 @@ const cameraAt = (frame: number): CameraPose => {
   const shift = shiftIn * (1 - shiftOut);
   target.x += shift * 27;
   target.y -= shift * 9 + shiftOut * 4;
-  const distance =
+  let distance =
     Math.exp(interpolate(t, [0, 1], [Math.log(40), Math.log(185)])) * (1 + shift * 0.3 - shiftOut * 0.02);
+  const dive = interpolate(frame, [DIVE, END], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
+  const [hx, hy] = project(106, 47.5);
+  target.lerp(new THREE.Vector3(hx, hy, 1.5), dive);
+  distance *= 1 - 0.82 * dive;
   const tilt = (interpolate(t, [0, 1], [46, 40]) * Math.PI) / 180; // angle from straight down
   const turn = (interpolate(frame, [0, 300, END], [-9, 2, 6]) * Math.PI) / 180; // slow orbit
   const offset = new THREE.Vector3(0, -distance * Math.sin(tilt), distance * Math.cos(tilt));
@@ -273,6 +281,14 @@ export const Scene1: React.FC = () => {
         </div>
       </div>
 
+      {/* fade into the night sky (Scene 2 starts on this colour) */}
+      <AbsoluteFill
+        style={{
+          background: `radial-gradient(ellipse at 50% 45%, ${SCENE2_NIGHT}cc, ${SCENE2_NIGHT})`,
+          opacity: interpolate(frame, [DIVE + 25, END], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) }),
+        }}
+      />
+
       <SizeComparison frame={frame} />
       <Timeline frame={frame} />
       <HowDidTheyDoIt frame={frame} />
@@ -452,7 +468,8 @@ const HowDidTheyDoIt: React.FC<{ frame: number }> = ({ frame }) => {
   const start = PART_C + 50;
   if (frame < start - 10) return null;
   const words = ["HOW", "DID", "THEY", "DO", "IT?"];
-  const shade = interpolate(frame, [start - 10, start + 20], [0, 1], clamp);
+  const out = interpolate(frame, [DIVE - 5, DIVE + 25], [1, 0], clamp);
+  const shade = interpolate(frame, [start - 10, start + 20], [0, 1], clamp) * out;
 
   return (
     <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
@@ -462,7 +479,7 @@ const HowDidTheyDoIt: React.FC<{ frame: number }> = ({ frame }) => {
           background: "radial-gradient(ellipse 55% 30% at 50% 50%, rgba(8,20,36,0.62), transparent 75%)",
         }}
       />
-      <div style={{ display: "flex", gap: height * 0.03 }}>
+      <div style={{ display: "flex", gap: height * 0.03, opacity: out, transform: `scale(${1 + (1 - out) * 0.15})` }}>
         {words.map((w, i) => {
           const s = spring({ frame: frame - (start + i * 7), fps, config: { damping: 12, stiffness: 160 } });
           const last = i === words.length - 1;

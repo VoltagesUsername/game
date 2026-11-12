@@ -3,7 +3,8 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { Blob, Glow, Hat, Rect, Ridge, Rider, hills, mountains, seeded } from "./SteppeNight";
+import { Blob, Glow, Ridge, Rider, hills, mountains, seeded } from "./SteppeNight";
+import { StandingLeader } from "./characters";
 
 /**
  * Scene 2 - Background & rise to power (0:30-1:10). Parts 1 and 2 so far.
@@ -14,9 +15,11 @@ import { Blob, Glow, Hat, Rect, Ridge, Rider, hills, mountains, seeded } from ".
  * Frames are local to this scene (30 fps). They get synced to the voiceover later.
  */
 
-const UNIFY = 210; // the 1206 moment
-const PART_2 = 360;
-const END = 750;
+const INTRO = 30; // camera tilts down from the night sky (continues Scene 1's ending)
+const UNIFY = 240; // the 1206 moment
+const PART_2 = 390;
+export const SCENE2_FRAMES = 780;
+const END = SCENE2_FRAMES;
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const SERIF = "Georgia, 'Times New Roman', serif";
@@ -111,62 +114,21 @@ const Stars: React.FC<{ frame: number; opacity: number }> = ({ frame, opacity })
 };
 
 /** Genghis Khan: a simple standing figure with a gold hat, holding a tall war banner. */
-const Khan: React.FC<{ frame: number; rise: number }> = ({ frame, rise }) => {
-  const wave = (i: number) => Math.sin(frame * 0.12 - i * 0.7) * 0.07;
-  return (
-    <group position={[0, NEAR(0) - 3.4 * (1 - rise), -4.1]}>
-      {/* legs */}
-      <Rect position={[-0.09, 0.22, 0]} size={[0.11, 0.46]} color="#09060e" />
-      <Rect position={[0.09, 0.22, 0]} size={[0.11, 0.46]} color="#09060e" />
-      {/* body + cape */}
-      <Blob position={[0, 0.72, 0.005]} scale={[0.5, 0.82, 1]} radius={0.5} color="#09060e" />
-      <Rect position={[-0.2, 0.62, -0.01]} size={[0.24, 0.7]} rotation={0.12 + Math.sin(frame * 0.1) * 0.04} color="#7a1712" />
-      {/* arm to the banner */}
-      <Rect position={[0.27, 0.86, 0.01]} size={[0.34, 0.09]} rotation={0.5} color="#09060e" />
-      {/* head */}
-      <group position={[0, 1.27, 0.01]}>
-        <Blob position={[0, 0, 0]} radius={0.19} color="#09060e" />
-        <mesh position={[0.045, 0.02, 0.01]}>
-          <circleGeometry args={[0.022, 12]} />
-          <meshBasicMaterial color="#fff6e8" />
-        </mesh>
-        <mesh position={[0.115, 0.02, 0.01]}>
-          <circleGeometry args={[0.022, 12]} />
-          <meshBasicMaterial color="#fff6e8" />
-        </mesh>
-        <mesh position={[0.08, -0.06, 0.01]}>
-          <ringGeometry args={[0.04, 0.052, 12, 1, Math.PI + 0.5, Math.PI - 1]} />
-          <meshBasicMaterial color="#fff6e8" />
-        </mesh>
-        <Hat position={[0, 0.13, 0.012]} size={0.4} color={GOLD} />
-      </group>
-      {/* war banner */}
-      <group position={[0.45, 0, 0]}>
-        <Rect position={[0, 1.15, 0]} size={[0.05, 2.3]} color="#2a1810" />
-        <Blob position={[0, 2.32, 0.002]} radius={0.07} color={GOLD} />
-        {[0, 1, 2, 3].map((i) => (
-          <Rect
-            key={i}
-            position={[0.14 + i * 0.22, 2.05 + wave(i) * (i + 1) * 0.6, 0.004]}
-            size={[0.23, 0.46 - i * 0.04]}
-            rotation={wave(i)}
-            color={i % 2 ? "#b8261e" : RED}
-          />
-        ))}
-        <Rect position={[0.47, 1.8 + wave(2) * 1.2, 0.006]} size={[0.9, 0.05]} color={GOLD} />
-      </group>
-    </group>
-  );
-};
+/** Genghis Khan rising up from behind the hill (detailed figure from characters.tsx). */
+const Khan: React.FC<{ frame: number; rise: number }> = ({ frame, rise }) => (
+  <group position={[0, NEAR(0) - 3.4 * (1 - rise) - 0.02, -4.1]}>
+    <StandingLeader frame={frame} />
+  </group>
+);
 
 /** Riders from the five clans gather on the ridge after unification. */
 const GatheringRiders: React.FC<{ frame: number }> = ({ frame }) => {
   const riders = [
-    { stop: -6.2, from: -14, start: UNIFY + 45, hat: RED },
-    { stop: -3.8, from: -14, start: UNIFY + 60, hat: GOLD },
-    { stop: 3.8, from: 14, start: UNIFY + 52, hat: RED },
-    { stop: 6.2, from: 14, start: UNIFY + 68, hat: GOLD },
-    { stop: -8.4, from: -14, start: UNIFY + 75, hat: RED },
+    { stop: -6.2, from: -14, start: UNIFY + 45, hat: RED, robe: "#2f5aa8" },
+    { stop: -3.8, from: -14, start: UNIFY + 60, hat: GOLD, robe: "#a8302a" },
+    { stop: 3.8, from: 14, start: UNIFY + 52, hat: RED, robe: "#3d7a4a" },
+    { stop: 6.2, from: 14, start: UNIFY + 68, hat: GOLD, robe: "#6a3d8a" },
+    { stop: -8.4, from: -14, start: UNIFY + 75, hat: RED, robe: "#c9892f" },
   ];
   return (
     <>
@@ -181,7 +143,7 @@ const GatheringRiders: React.FC<{ frame: number }> = ({ frame }) => {
         const f = t < 0.98 ? frame : still;
         return (
           <group key={i} position={[x, RIDGE(x) - 0.05, -8.9 + i * 0.02]} scale={[0.7 * dir, 0.7, 0.7]}>
-            <Rider frame={f} offset={offset} hat={r.hat} banner={i === 0} />
+            <Rider frame={f} offset={offset} hat={r.hat} robe={r.robe} banner={i === 0} />
           </group>
         );
       })}
@@ -192,8 +154,13 @@ const GatheringRiders: React.FC<{ frame: number }> = ({ frame }) => {
 const CameraRig: React.FC<{ frame: number }> = ({ frame }) => {
   const { camera } = useThree();
   const t = interpolate(frame, [0, END], [0, 1], { easing: Easing.inOut(Easing.sin) });
-  camera.position.set(interpolate(t, [0, 1], [-0.8, 0.8]), interpolate(t, [0, 1], [0.1, 0.35]), interpolate(t, [0, 1], [10, 9.2]));
-  camera.lookAt(camera.position.x * 0.5, -0.2, 0);
+  const crane = interpolate(frame, [0, INTRO + 45], [1, 0], { ...clamp, easing: Easing.inOut(Easing.cubic) });
+  camera.position.set(
+    interpolate(t, [0, 1], [-0.8, 0.8]),
+    interpolate(t, [0, 1], [0.1, 0.35]) + crane * 4,
+    interpolate(t, [0, 1], [10, 9.2]),
+  );
+  camera.lookAt(camera.position.x * 0.5, -0.2 + crane * 9, 0);
   return null;
 };
 
@@ -287,7 +254,7 @@ const clanBase = (k: number) => {
 };
 
 const CLASHES: [number, number, number][] = [
-  [0, 1, 30], [2, 3, 56], [1, 4, 82], [0, 2, 106], [3, 4, 130], [1, 3, 154], [0, 4, 178],
+  [0, 1, 60], [2, 3, 86], [1, 4, 112], [0, 2, 136], [3, 4, 160], [1, 3, 184], [0, 4, 208],
 ];
 const CLASH_LEN = 24;
 
@@ -310,7 +277,7 @@ const clanPosition = (k: number, frame: number) => {
 const ClanEmblems: React.FC<{ frame: number }> = ({ frame }) => {
   const { fps } = useVideoConfig();
   const pull = spring({ frame: frame - (UNIFY + 6), fps, config: { damping: 15, stiffness: 90 } });
-  const appear = (k: number) => spring({ frame: frame - (8 + k * 5), fps, config: { damping: 11 } });
+  const appear = (k: number) => spring({ frame: frame - (INTRO + 12 + k * 5), fps, config: { damping: 11 } });
   if (pull > 0.995) return null;
   return (
     <g>
@@ -418,7 +385,7 @@ const UnifiedBanner: React.FC<{ frame: number }> = ({ frame }) => {
 
 const Part1Text: React.FC<{ frame: number }> = ({ frame }) => {
   const { fps } = useVideoConfig();
-  const before = interpolate(frame, [10, 30], [0, 1], clamp) * interpolate(frame, [UNIFY - 10, UNIFY + 5], [1, 0], clamp);
+  const before = interpolate(frame, [INTRO + 5, INTRO + 30], [0, 1], clamp) * interpolate(frame, [UNIFY - 10, UNIFY + 5], [1, 0], clamp);
   const yearS = spring({ frame: frame - UNIFY, fps, config: { damping: 12 } });
   const yearExit = interpolate(frame, [PART_2 - 25, PART_2], [1, 0], clamp);
   return (
@@ -496,8 +463,8 @@ const ROWS = [
   { n: 5, label: "Commanders of 1,000" },
   { n: 7, label: "Leaders of 100" },
 ];
-const PY_TOP = 520;
-const PY_ROW_H = 125;
+const PY_TOP = 512;
+const PY_ROW_H = 128;
 const PY_GAP = 150;
 const slot = (row: number, idx: number) => ({
   x: 960 + (idx - (ROWS[row].n - 1) / 2) * PY_GAP,
@@ -512,26 +479,63 @@ const PROMOTIONS: [[number, number], [number, number], number][] = [
 ];
 const PROMO_LEN = 40;
 
-const HATS = [GOLD, RED, "#3f7fc4", RED, GOLD, "#3f7fc4", RED];
+const FUR_HATS = [RED, "#3f7fc4", GOLD, "#3d7a4a", RED, GOLD, "#3f7fc4"];
+// robe colour per rank: Khan, commanders of 10,000, of 1,000, leaders of 100
+const RANK_ROBES = ["#23408e", "#8e2a24", "#2f5aa8", "#4f7a3a"];
 
-const Person: React.FC<{ x: number; y: number; s: number; hat: string; star: number; dim: number; isKhan?: boolean }> = ({
-  x, y, s, hat, star, dim, isKhan,
-}) => (
-  <g transform={`translate(${x} ${y}) scale(${s})`} opacity={1 - dim * 0.45}>
-    {star > 0 && <circle r={64} fill="url(#badgeGlow)" opacity={star} />}
-    <ellipse cy={40} rx={30} ry={22} fill="#09060e" />
-    <circle r={30} fill="#09060e" stroke={star > 0.5 ? GOLD : "none"} strokeWidth={4} />
-    <circle cx={-9} cy={0} r={3.5} fill="#fff6e8" />
-    <circle cx={9} cy={0} r={3.5} fill="#fff6e8" />
-    <path d="M -8 10 Q 0 17 8 10" stroke="#fff6e8" strokeWidth={3} fill="none" strokeLinecap="round" />
-    <path d={isKhan ? "M -30 -16 A 30 26 0 0 1 30 -16 Z" : "M -26 -16 A 26 22 0 0 1 26 -16 Z"} fill={hat} />
-    <rect x={-34} y={-20} width={68} height={10} rx={5} fill="#5a3b2a" />
-    {star > 0 && (
-      <polygon transform={`translate(30 -34) scale(${0.9 * star})`}
-        points="0,-14 4,-4 15,-4 6,2 9,13 0,6 -9,13 -6,2 -15,-4 -4,-4" fill={GOLD} stroke="#7a4a00" strokeWidth={2} />
-    )}
-  </g>
-);
+/** Head and shoulders of a person in a deel; hat depends on rank. */
+const Person: React.FC<{ x: number; y: number; s: number; rank: number; tint: number; star: number; dim: number }> = ({
+  x, y, s, rank, tint, star, dim,
+}) => {
+  const robe = RANK_ROBES[rank];
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`} opacity={1 - dim * 0.45}>
+      {star > 0 && <circle cy={10} r={70} fill="url(#badgeGlow)" opacity={star} />}
+      {/* shoulders in a deel with a gold-trimmed diagonal collar */}
+      <path d="M -48 72 Q -48 34 -18 28 L 18 28 Q 48 34 48 72 Z" fill={robe} />
+      <path d="M -16 28 L 16 66" stroke="#e8b64a" strokeWidth={6} strokeLinecap="round" />
+      <path d="M -48 66 L 48 66" stroke="#e08a2a" strokeWidth={8} />
+      {rank === 0 && <path d="M -22 30 Q 0 40 22 30 L 18 22 Q 0 30 -18 22 Z" fill="#6b4a32" />}
+      {/* head + face */}
+      <circle r={28} fill="#09060e" stroke={star > 0.5 ? GOLD : "none"} strokeWidth={4} />
+      <ellipse cx={-9} cy={2} rx={3.6} ry={4.6} fill="#fff6e8" />
+      <ellipse cx={9} cy={2} rx={3.6} ry={4.6} fill="#fff6e8" />
+      <path d="M -14 -6 L -5 -8 M 5 -8 L 14 -6" stroke="#fff6e8" strokeWidth={2.4} strokeLinecap="round" />
+      <path d="M -7 12 Q 0 18 7 12" stroke="#fff6e8" strokeWidth={2.8} fill="none" strokeLinecap="round" />
+      {/* hats by rank */}
+      {rank === 0 && (
+        <g>
+          <path d="M -30 -12 Q -28 -48 0 -52 Q 28 -48 30 -12 Z" fill={GOLD} />
+          <path d="M -12 -14 L -6 -46 M 12 -14 L 6 -46" stroke="#b8862a" strokeWidth={3} />
+          <path d="M 0 -52 L -10 -30 M 0 -52 L 0 -28 M 0 -52 L 10 -30" stroke={RED} strokeWidth={4} strokeLinecap="round" />
+          <rect x={-36} y={-20} width={72} height={15} rx={7} fill="#6b4a32" />
+          <circle cy={-54} r={6} fill="#e8b64a" />
+        </g>
+      )}
+      {(rank === 1 || rank === 2) && (
+        <g>
+          <path d="M -30 -8 L -36 24 L -25 24 L -22 -6 Z M 30 -8 L 36 24 L 25 24 L 22 -6 Z" fill="#5a3418" />
+          <path d="M -30 -8 Q -30 -44 0 -48 Q 30 -44 30 -8 Z" fill="#9aa6b2" />
+          <path d="M -30 -10 Q 0 -4 30 -10" stroke="#5f6b78" strokeWidth={5} fill="none" />
+          <path d="M 0 -48 L 0 -64" stroke="#5f6b78" strokeWidth={4} strokeLinecap="round" />
+          {rank === 1 && <path d="M 0 -62 Q 14 -76 26 -64 Q 14 -66 2 -58 Z" fill={RED} />}
+        </g>
+      )}
+      {rank === 3 && (
+        <g>
+          <path d="M -32 -10 L -34 18 L -24 16 L -24 -8 Z M 32 -10 L 34 18 L 24 16 L 24 -8 Z" fill="#6b4a32" />
+          <path d="M -24 -14 Q -22 -40 0 -42 Q 22 -40 24 -14 Z" fill={FUR_HATS[tint % FUR_HATS.length]} />
+          <rect x={-33} y={-20} width={66} height={13} rx={6} fill="#6b4a32" />
+          <circle cy={-44} r={4.5} fill="#e8b64a" />
+        </g>
+      )}
+      {star > 0 && (
+        <polygon transform={`translate(34 -40) scale(${0.9 * star})`}
+          points="0,-14 4,-4 15,-4 6,2 9,13 0,6 -9,13 -6,2 -15,-4 -4,-4" fill={GOLD} stroke="#7a4a00" strokeWidth={2} />
+      )}
+    </g>
+  );
+};
 
 const Pyramid: React.FC<{ frame: number }> = ({ frame }) => {
   const { fps } = useVideoConfig();
@@ -561,6 +565,7 @@ const Pyramid: React.FC<{ frame: number }> = ({ frame }) => {
         let star = 0;
         let dim = 0;
         let lift = 0;
+        let rank = row;
         for (const [up, down, start] of PROMOTIONS) {
           const t = interpolate(f, [start, start + PROMO_LEN], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
           const glowIn = interpolate(f, [start - 15, start], [0, 1], clamp);
@@ -570,18 +575,19 @@ const Pyramid: React.FC<{ frame: number }> = ({ frame }) => {
             pos = { x: interpolate(t, [0, 1], [a.x, b.x]), y: interpolate(t, [0, 1], [a.y, b.y]) };
             lift = Math.sin(Math.PI * t) * 40;
             star = glowIn;
+            rank = t < 0.5 ? up[0] : down[0];
           }
           if (down[0] === row && down[1] === idx) {
             const a = slot(...down);
             const b = slot(...up);
             pos = { x: interpolate(t, [0, 1], [a.x, b.x]), y: interpolate(t, [0, 1], [a.y, b.y]) };
             dim = t;
+            rank = t < 0.5 ? down[0] : up[0];
           }
         }
-        const s = baseAppear(row) * (row === 0 ? 1.25 : 1);
+        const s = baseAppear(row) * (row === 0 ? 1.05 : 0.9);
         return (
-          <Person key={`${row}-${idx}`} x={pos.x} y={pos.y - lift} s={s} hat={row === 0 ? GOLD : HATS[(idx + row) % HATS.length]}
-            star={star} dim={dim} isKhan={row === 0} />
+          <Person key={`${row}-${idx}`} x={pos.x} y={pos.y - lift} s={s} rank={rank} tint={idx + row} star={star} dim={dim} />
         );
       })}
       {/* "PROMOTED" tags */}
@@ -643,7 +649,7 @@ export const Scene2: React.FC = () => {
 
   const dawn = interpolate(frame, [UNIFY, UNIFY + 100], [0, 1], { ...clamp, easing: Easing.inOut(Easing.sin) });
   const khanRise = spring({ frame: frame - (UNIFY + 50), fps, config: { damping: 16, stiffness: 60 } });
-  const fadeIn = interpolate(frame, [0, 15], [0, 1], clamp);
+  const fromNight = interpolate(frame, [0, INTRO], [1, 0], { ...clamp, easing: Easing.out(Easing.quad) });
   const part2Dim = interpolate(frame, [PART_2 - 10, PART_2 + 20], [0, 1], clamp);
 
   // little screen shake on each clash
@@ -655,7 +661,7 @@ export const Scene2: React.FC = () => {
   if (frame >= UNIFY && frame < UNIFY + 14) shake += Math.sin((frame - UNIFY) * 2.2) * (14 - (frame - UNIFY)) * 1.6;
 
   return (
-    <AbsoluteFill style={{ backgroundColor: NIGHT.top, opacity: fadeIn }}>
+    <AbsoluteFill style={{ backgroundColor: NIGHT.top }}>
       <AbsoluteFill style={{ transform: `translate(${shake}px, ${shake * 0.4}px)` }}>
         <ThreeCanvas width={width} height={height} flat camera={{ fov: 35, position: [0, 0, 10] }}>
           <Landscape frame={frame} dawn={dawn} khanRise={khanRise} />
@@ -692,6 +698,8 @@ export const Scene2: React.FC = () => {
       </svg>
 
       <Part1Text frame={frame} />
+      {/* opens on the same night colour Scene 1 ends on */}
+      <AbsoluteFill style={{ backgroundColor: NIGHT.top, opacity: fromNight }} />
       <Part2Title frame={frame} />
     </AbsoluteFill>
   );

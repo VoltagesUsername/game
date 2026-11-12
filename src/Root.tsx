@@ -3,7 +3,8 @@ import { getAudioDurationInSeconds } from "@remotion/media-utils";
 import { MainVideo, MainVideoProps } from "./MainVideo";
 import { SteppeNight } from "./mongol/SteppeNight";
 import { Scene1 } from "./mongol/Scene1";
-import { Scene2 } from "./mongol/Scene2";
+import { Scene2, SCENE2_FRAMES } from "./mongol/Scene2";
+import { MongolVideo, MONGOL_VIDEO_FRAMES } from "./mongol/MongolVideo";
 
 const FPS = 30;
 
@@ -50,6 +51,14 @@ export const RemotionRoot: React.FC = () => {
         calculateMetadata={calculateMetadata}
       />
       <Composition
+        id="MongolVideo"
+        component={MongolVideo}
+        fps={FPS}
+        width={1920}
+        height={1080}
+        durationInFrames={MONGOL_VIDEO_FRAMES}
+      />
+      <Composition
         id="Scene1"
         component={Scene1}
         fps={FPS}
@@ -63,7 +72,7 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={1920}
         height={1080}
-        durationInFrames={25 * FPS}
+        durationInFrames={SCENE2_FRAMES}
       />
       <Composition
         id="MongolTest"

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
+import { DetailedRider } from "./characters";
 import {
   AbsoluteFill,
   Easing,
@@ -358,56 +359,14 @@ export const Hat: React.FC<{ position: [number, number, number]; size: number; c
 
 // ---------- riders ----------
 
-const Leg: React.FC<{ x: number; angle: number }> = ({ x, angle }) => (
-  <group position={[x, 0.62, 0]} rotation={[0, 0, angle]}>
-    <Rect position={[0, -0.3, 0]} size={[0.075, 0.62]} color={COLORS.ink} />
-  </group>
-);
-
-export const Rider: React.FC<{ frame: number; offset: number; hat: string; banner?: boolean }> = ({
+/** Rider on horseback (detailed version lives in characters.tsx). */
+export const Rider: React.FC<{ frame: number; offset: number; hat: string; banner?: boolean; robe?: string }> = ({
   frame,
   offset,
   hat,
   banner,
-}) => {
-  const phase = frame * 0.42 + offset;
-  const bob = Math.abs(Math.sin(phase)) * 0.06;
-  const pitch = Math.sin(phase) * 0.04;
-  return (
-    <group position={[0, bob, 0]} rotation={[0, 0, pitch]}>
-      {/* horse */}
-      <Leg x={0.32} angle={Math.sin(phase) * 0.7} />
-      <Leg x={0.24} angle={Math.sin(phase + 0.6) * 0.7} />
-      <Leg x={-0.3} angle={Math.sin(phase + Math.PI) * 0.6} />
-      <Leg x={-0.38} angle={Math.sin(phase + Math.PI + 0.6) * 0.6} />
-      <Blob position={[0, 0.78, 0.01]} scale={[1, 0.42, 1]} radius={0.5} color={COLORS.ink} />
-      <Rect position={[0.43, 1.0, 0.01]} size={[0.22, 0.5]} rotation={-0.65} color={COLORS.ink} />
-      <Blob position={[0.62, 1.18, 0.01]} scale={[0.36, 0.17, 1]} rotation={-0.45} color={COLORS.ink} />
-      <Rect
-        position={[-0.55, 0.78, 0.01]}
-        size={[0.08, 0.45]}
-        rotation={0.9 + Math.sin(phase * 0.5) * 0.15}
-        color={COLORS.ink}
-      />
-      {/* person */}
-      <Blob position={[0.0, 1.13, 0.02]} scale={[0.24, 0.46, 1]} radius={0.5} color={COLORS.ink} />
-      <Blob position={[0.05, 1.45, 0.02]} radius={0.12} color={COLORS.ink} />
-      {/* hat: coloured brim + pointed top */}
-      <Hat position={[0.05, 1.53, 0.03]} size={0.26} color={hat} />
-      {banner && (
-        <group position={[-0.12, 1.1, 0.01]}>
-          <Rect position={[0, 0.5, 0]} size={[0.035, 1.5]} color={COLORS.ink} />
-          <Rect
-            position={[-0.18, 1.12, 0]}
-            size={[0.36, 0.2]}
-            rotation={Math.sin(phase * 0.7) * 0.12}
-            color={COLORS.red}
-          />
-        </group>
-      )}
-    </group>
-  );
-};
+  robe,
+}) => <DetailedRider frame={frame} offset={offset} hat={hat} banner={banner} robe={robe ?? (hat === COLORS.gold ? "#a8302a" : "#2f5aa8")} />;
 
 // ---------- campfire + people ----------
 

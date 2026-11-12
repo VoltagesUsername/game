@@ -6,6 +6,7 @@ import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoCon
 import { EurasiaMap, SUN, useHeightSampler, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
 import { Glow, seeded } from "./SteppeNight";
+import { CITY_SCALE, CampsAndHerds, Countryside, KarakorumCity, Roads, Surroundings, Traffic } from "./karakorum";
 
 /**
  * Scene 3 - Base & geographic reach (1:10-1:50, 40 s)
@@ -42,8 +43,9 @@ type Pose = { position: THREE.Vector3; target: THREE.Vector3; dist: number };
 const makeKeys = (kz: number): Key[] => [
   { f: 0, lon: 80, lat: 44, z: 0, dist: 245, tilt: 26, turn: -8 },
   { f: 45, lon: 82, lat: 44.5, z: 0, dist: 228, tilt: 29, turn: -7 },
-  { f: PIN, lon: KARAKORUM[0], lat: KARAKORUM[1] + 0.2, z: kz + 0.2, dist: 11.5, tilt: 46, turn: -28, ease: Easing.inOut(Easing.cubic) },
-  { f: PART_B, lon: KARAKORUM[0] + 0.3, lat: KARAKORUM[1] + 0.2, z: kz + 0.2, dist: 10.2, tilt: 49, turn: 12, ease: Easing.inOut(Easing.sin) },
+  { f: PIN, lon: KARAKORUM[0], lat: KARAKORUM[1] + 0.4, z: kz + 0.2, dist: 17, tilt: 47, turn: -28, ease: Easing.inOut(Easing.cubic) },
+  { f: 330, lon: KARAKORUM[0] + 0.4, lat: KARAKORUM[1] - 0.2, z: kz + 0.15, dist: 9.5, tilt: 57, turn: -6, ease: Easing.inOut(Easing.sin) },
+  { f: PART_B, lon: KARAKORUM[0] + 0.3, lat: KARAKORUM[1] + 0.4, z: kz + 0.2, dist: 14, tilt: 50, turn: 14, ease: Easing.inOut(Easing.sin) },
   { f: 690, lon: 76, lat: 43.5, z: 0, dist: 165, tilt: 38, turn: 2, ease: Easing.inOut(Easing.cubic) },
   { f: PART_C, lon: 76, lat: 43.5, z: 0, dist: 157, tilt: 38, turn: 5, ease: Easing.inOut(Easing.sin) },
   { f: SCENE3_FRAMES, lon: 78, lat: 45, z: 0, dist: 138, tilt: 44, turn: 9, ease: Easing.inOut(Easing.sin) },
@@ -172,7 +174,17 @@ const Clouds: React.FC<{ frame: number; pose: Pose }> = ({ frame, pose }) => {
       seed: r() * 50,
       high: true,
     }));
-    return [...near, ...far];
+    const below = Array.from({ length: 22 }, (_, i) => {
+      const a = (i / 22) * Math.PI * 2 + r() * 0.2;
+      return {
+        base: new THREE.Vector3(Math.cos(a) * MAP_W * (0.5 + r() * 0.25), Math.sin(a) * MAP_H * (0.55 + r() * 0.35), -16 + r() * 6),
+        size: 34 + r() * 26,
+        seed: r() * 50,
+        high: false,
+        under: true,
+      };
+    });
+    return [...near.map((c) => ({ ...c, under: false })), ...far.map((c) => ({ ...c, under: false })), ...below];
   }, []);
   return (
     <>
@@ -181,7 +193,8 @@ const Clouds: React.FC<{ frame: number; pose: Pose }> = ({ frame, pose }) => {
         const camDist = p.distanceTo(pose.position);
         // fade clouds that are right in front of the lens, and thin them out in close-ups
         let o = (c.high ? 0.35 : 0.85) * interpolate(camDist, [2, 9], [0, 1], clamp);
-        if (c.high) o *= interpolate(pose.dist, [60, 140], [0, 1], clamp);
+        if (c.under) o = 0.8 * interpolate(pose.dist, [70, 140], [0, 1], clamp);
+        else if (c.high) o *= interpolate(pose.dist, [60, 140], [0, 1], clamp);
         else o *= interpolate(pose.dist, [14, 28, 110, 170], [0, 1, 1, 0], clamp);
         return <Cloud key={i} position={p} size={c.size} seed={c.seed} opacity={o} />;
       })}
@@ -193,195 +206,14 @@ const Clouds: React.FC<{ frame: number; pose: Pose }> = ({ frame, pose }) => {
 // Karakorum: a small 3D model of the capital
 // ======================================================================
 
-const Box: React.FC<{ p: [number, number, number]; s: [number, number, number]; color: string; rot?: number }> = ({ p, s, color, rot = 0 }) => (
-  <mesh position={[p[0], p[1], p[2] + s[2] / 2]} rotation={[0, 0, rot]}>
-    <boxGeometry args={s} />
-    <meshLambertMaterial color={color} />
-  </mesh>
-);
-
-/** Four-sided hip roof. */
-const Roof: React.FC<{ p: [number, number, number]; w: number; h: number; color: string }> = ({ p, w, h, color }) => (
-  <mesh position={[p[0], p[1], p[2] + h / 2]} rotation={[Math.PI / 2, Math.PI / 4, 0]}>
-    <coneGeometry args={[w * 0.75, h, 4]} />
-    <meshLambertMaterial color={color} />
-  </mesh>
-);
-
-const Yurt: React.FC<{ p: [number, number, number]; r: number }> = ({ p, r }) => (
-  <group position={p}>
-    <mesh position={[0, 0, r * 0.4]} rotation={[Math.PI / 2, 0, 0]}>
-      <cylinderGeometry args={[r, r, r * 0.8, 14]} />
-      <meshLambertMaterial color="#f3ece0" />
-    </mesh>
-    <mesh position={[0, 0, r * 0.8 + r * 0.3]} rotation={[Math.PI / 2, 0, 0]}>
-      <coneGeometry args={[r * 1.05, r * 0.6, 14]} />
-      <meshLambertMaterial color="#e2d6c2" />
-    </mesh>
-    <mesh position={[0, -r * 0.98, r * 0.28]}>
-      <planeGeometry args={[r * 0.45, r * 0.55]} />
-      <meshBasicMaterial color="#b8322a" />
-    </mesh>
-  </group>
-);
-
-const KarakorumModel: React.FC<{ frame: number; z: number; appear: number }> = ({ frame, z, appear }) => {
-  const [kx, ky] = project(...KARAKORUM);
-  const yurts = useMemo(() => {
-    const r = seeded(91);
-    return Array.from({ length: 34 }, () => {
-      const a = r() * Math.PI * 2;
-      const d = 0.62 + r() * 0.5;
-      return { x: Math.cos(a) * d * 1.15, y: Math.sin(a) * d, r: 0.028 + r() * 0.012 };
-    }).filter((y) => !(Math.abs(y.x) < 0.5 && Math.abs(y.y) < 0.42));
-  }, []);
-  const buildings = useMemo(() => {
-    const r = seeded(17);
-    return Array.from({ length: 16 }, () => ({
-      x: -0.32 + r() * 0.5, y: -0.2 + r() * 0.42, w: 0.05 + r() * 0.04, d: 0.04 + r() * 0.03,
-      roof: ["#6b5a4a", "#7a3a2a", "#4a5a6a"][Math.floor(r() * 3)],
-    })).filter((b) => !(b.x < -0.1 && b.y < -0.05)); // leave room for the palace
-  }, []);
-  const s = 2.0 * appear;
-  if (s <= 0.01) return null;
-  const wall = "#d6b98c";
-  const W = 0.46, H = 0.34, T = 0.025, WH = 0.06;
-  return (
-    <group position={[kx, ky, z - 0.055]} scale={[s, s, s]}>
-      {/* packed-earth ground the city sits on */}
-      <mesh position={[0, 0, 0.062]}>
-        <planeGeometry args={[W * 2 + 0.1, H * 2 + 0.1]} />
-        <meshLambertMaterial color="#c8b48a" />
-      </mesh>
-      {/* walls + corner towers + gates */}
-      <Box p={[0, H, 0.06]} s={[W * 2, T, WH]} color={wall} />
-      <Box p={[0, -H, 0.06]} s={[W * 2, T, WH]} color={wall} />
-      <Box p={[W, 0, 0.06]} s={[T, H * 2, WH]} color={wall} />
-      <Box p={[-W, 0, 0.06]} s={[T, H * 2, WH]} color={wall} />
-      {[[-W, -H], [W, -H], [-W, H], [W, H]].map(([x, y], i) => (
-        <Box key={i} p={[x, y, 0.06]} s={[0.06, 0.06, WH * 1.6]} color="#c9a978" />
-      ))}
-      {[[0, -H], [0, H], [-W, 0], [W, 0]].map(([x, y], i) => (
-        <group key={i}>
-          <Box p={[x, y, 0.06]} s={[0.09, 0.07, WH * 1.9]} color="#c9a978" />
-          <Roof p={[x, y, 0.06 + WH * 1.9]} w={0.09} h={0.05} color="#7a3a2a" />
-        </group>
-      ))}
-      {/* palace of the Great Khan on a raised platform */}
-      <Box p={[-0.24, -0.16, 0.06]} s={[0.24, 0.17, 0.03]} color="#cfc2a8" />
-      <Box p={[-0.24, -0.16, 0.09]} s={[0.18, 0.12, 0.07]} color="#a8302a" />
-      <Roof p={[-0.24, -0.16, 0.16]} w={0.24} h={0.14} color="#2f7a5a" />
-      <Box p={[-0.24, -0.16, 0.3]} s={[0.012, 0.012, 0.05]} color={GOLD} />
-      {/* houses and workshops */}
-      {buildings.map((b, i) => (
-        <group key={i}>
-          <Box p={[b.x, b.y, 0.06]} s={[b.w, b.d, 0.04]} color="#efe4cf" />
-          <Roof p={[b.x, b.y, 0.1]} w={Math.max(b.w, b.d)} h={0.03} color={b.roof} />
-        </group>
-      ))}
-      {/* temples of different faiths side by side: stupa, mosque, church */}
-      <group position={[0.26, 0.2, 0.06]}>
-        <mesh position={[0, 0, 0.035]}><sphereGeometry args={[0.035, 16, 12]} /><meshLambertMaterial color="#f7f3ea" /></mesh>
-        <mesh position={[0, 0, 0.085]} rotation={[Math.PI / 2, 0, 0]}><coneGeometry args={[0.012, 0.06, 8]} /><meshLambertMaterial color={GOLD} /></mesh>
-      </group>
-      <group position={[0.06, 0.22, 0.06]}>
-        <Box p={[0, 0, 0]} s={[0.07, 0.07, 0.04]} color="#efe4cf" />
-        <mesh position={[0, 0, 0.055]}><sphereGeometry args={[0.03, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshLambertMaterial color="#3a9a9a" /></mesh>
-        <Box p={[0.045, 0.03, 0]} s={[0.015, 0.015, 0.1]} color="#efe4cf" />
-      </group>
-      <group position={[0.3, -0.12, 0.06]}>
-        <Box p={[0, 0, 0]} s={[0.08, 0.05, 0.045]} color="#e8dcc4" />
-        <Roof p={[0, 0, 0.045]} w={0.08} h={0.03} color="#5a4a3a" />
-        <Box p={[0.045, 0, 0]} s={[0.025, 0.025, 0.09]} color="#e8dcc4" />
-      </group>
-      {/* the famous Silver Tree fountain in front of the palace */}
-      <mesh position={[-0.05, -0.12, 0.09]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.004, 0.008, 0.06, 6]} />
-        <meshLambertMaterial color="#dfe6ee" />
-      </mesh>
-      <mesh position={[-0.05, -0.12, 0.125]}>
-        <sphereGeometry args={[0.018, 10, 8]} />
-        <meshLambertMaterial color="#dfe6ee" />
-      </mesh>
-      {/* ger camps around the walls, with cooking smoke */}
-      {yurts.map((y, i) => (
-        <Yurt key={i} p={[y.x, y.y, 0.06]} r={y.r} />
-      ))}
-      {yurts.slice(0, 6).map((y, i) => {
-        const t = ((frame * 0.6 + i * 17) % 60) / 60;
-        return (
-          <mesh key={`s${i}`} position={[y.x + t * 0.05, y.y + t * 0.02, 0.12 + t * 0.18]}>
-            <sphereGeometry args={[0.012 + t * 0.03, 8, 6]} />
-            <meshBasicMaterial color="#e9e6e0" transparent opacity={0.5 * (1 - t)} depthWrite={false} />
-          </mesh>
-        );
-      })}
-    </group>
-  );
-};
-
-/** Orkhon River running past the capital. */
-const OrkhonRiver: React.FC<{ h: HeightFn; appear: number }> = ({ h, appear }) => {
-  const geometry = useMemo(() => {
-    const [kx, ky] = project(...KARAKORUM);
-    const pts = [
-      [-2.8, -3.2], [-2.2, -1.9], [-1.75, -0.9], [-1.55, 0.2], [-1.35, 1.3], [-0.9, 2.3], [-0.2, 3.2], [0.8, 4.1], [2.0, 4.8], [3.2, 5.6],
-    ].map(([dx, dy]) => {
-      const x = kx + dx, y = ky + dy;
-      // world -> lon/lat for the height lookup
-      const lon = KARAKORUM[0] + dx / Math.cos((40 * Math.PI) / 180);
-      const lat = KARAKORUM[1] + dy;
-      return new THREE.Vector3(x, y, h(lon, lat) + 0.05);
-    });
-    const rough = new THREE.CatmullRomCurve3(pts);
-    const dense = rough.getSpacedPoints(220).map((q) => {
-      const lon = KARAKORUM[0] + (q.x - kx) / Math.cos((40 * Math.PI) / 180);
-      const lat = KARAKORUM[1] + (q.y - ky);
-      return new THREE.Vector3(q.x, q.y, h(lon, lat) + 0.07);
-    });
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(dense), 300, 0.05, 6, false);
-  }, [h]);
+/** Orkhon River running past the capital (points already sit on the ground). */
+const OrkhonRiver: React.FC<{ points: THREE.Vector3[]; appear: number }> = ({ points, appear }) => {
+  const geometry = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 400, 0.085, 6, false), [points]);
   if (appear <= 0.01) return null;
   return (
-    <mesh geometry={geometry}>
-      <meshBasicMaterial color="#5fb4d8" transparent opacity={appear} />
+    <mesh geometry={geometry} receiveShadow>
+      <meshStandardMaterial color="#4fa6cf" roughness={0.25} metalness={0.1} transparent opacity={appear} />
     </mesh>
-  );
-};
-
-/** Little caravans heading for the capital. */
-const Caravans: React.FC<{ frame: number; h: HeightFn; appear: number }> = ({ frame, h, appear }) => {
-  const routes = useMemo(
-    () =>
-      [
-        [[6, -4], [3, -2.2], [1.2, -0.9]],
-        [[-6, 3], [-3.4, 1.8], [-1.1, 0.6]],
-        [[4, 5], [2.2, 2.6], [0.9, 0.9]],
-      ].map((r) => new THREE.CatmullRomCurve3(r.map(([dx, dy]) => {
-        const [kx, ky] = project(...KARAKORUM);
-        const lon = KARAKORUM[0] + dx / Math.cos((40 * Math.PI) / 180);
-        return new THREE.Vector3(kx + dx, ky + dy, h(lon, KARAKORUM[1] + dy) + 0.06);
-      }))),
-    [h],
-  );
-  if (appear <= 0.01) return null;
-  return (
-    <>
-      {routes.map((curve, i) => (
-        <group key={i}>
-          {[0, 1, 2, 3].map((j) => {
-            const u = (((frame - PIN) * 0.0022 + i * 0.3 - j * 0.025) % 1 + 1) % 1;
-            const p = curve.getPointAt(u);
-            return (
-              <mesh key={j} position={p} scale={appear}>
-                <boxGeometry args={[0.06, 0.06, 0.06]} />
-                <meshLambertMaterial color={j === 0 ? "#3a2414" : "#8a6a4a"} />
-              </mesh>
-            );
-          })}
-        </group>
-      ))}
-    </>
   );
 };
 
@@ -390,14 +222,15 @@ const Pin: React.FC<{ frame: number; base: THREE.Vector3; visible: number }> = (
   const { fps } = useVideoConfig();
   const drop = spring({ frame: frame - (PIN - 18), fps, config: { damping: 9, stiffness: 140 } });
   if (frame < PIN - 18 || visible <= 0.01) return null;
-  const height = 0.9 + (1 - drop) * 6;
-  const ripples = [0, 1, 2].map((i) => ((frame - PIN - i * 14) % 42) / 42);
+  const height = 1.5 + (1 - drop) * 7;
+  // ripples only right after the pin lands
+  const ripples = [0, 1, 2].map((i) => (frame - PIN - i * 14 > 70 ? 1 : ((frame - PIN - i * 14) % 42) / 42));
   return (
-    <group position={base} scale={visible}>
+    <group position={base} scale={visible * 1.3}>
       {ripples.map((t, i) =>
         frame - PIN - i * 14 >= 0 ? (
           <mesh key={i} position={[0, 0, 0.12]}>
-            <ringGeometry args={[0.2 + t * 2.2, 0.26 + t * 2.2, 48]} />
+            <ringGeometry args={[0.3 + t * 3.4, 0.38 + t * 3.4, 64]} />
             <meshBasicMaterial color={GOLD} transparent opacity={(1 - t) * 0.8} depthWrite={false} />
           </mesh>
         ) : null,
@@ -573,7 +406,7 @@ export const Scene3: React.FC = () => {
   const kzRaw = h ? h(...KARAKORUM) : 1;
   const kz = kzRaw;
   const [kxw, kyw] = project(...KARAKORUM);
-  const FLAT_R = 3.0;
+  const FLAT_R = 6.0;
   const flatAmt = interpolate(frame, [PIN - 70, PIN - 25, PART_B + 80, PART_B + 150], [0, 1, 1, 0], clamp);
   // height lookup that matches the flattened valley under the city (used for river, caravans, pin)
   const hFlat = useMemo(() => {
@@ -598,7 +431,33 @@ export const Scene3: React.FC = () => {
   const opening = interpolate(frame, [0, 40], [1, 0], { ...clamp, easing: Easing.out(Easing.quad) });
 
   // label positions
-  const pinWorld = useMemo(() => new THREE.Vector3(kxw, kyw, kz + 1.45), [kxw, kyw, kz]);
+  const pinWorld = useMemo(() => new THREE.Vector3(kxw, kyw + 2.3, kz + 0.6), [kxw, kyw, kz]); // just beyond the north gate
+
+  // everything around the city, placed on the (flattened) terrain
+  const surroundings = useMemo<Surroundings | null>(() => {
+    if (!h || !hFlat) return null;
+    const c40 = Math.cos((40 * Math.PI) / 180);
+    return {
+      cx: kxw,
+      cy: kyw,
+      toLonLat: (x: number, y: number) => [KARAKORUM[0] + (x - kxw) / c40, KARAKORUM[1] + (y - kyw)],
+      h: hFlat,
+      raw: h,
+    };
+  }, [h, hFlat, kxw, kyw]);
+  const river = useMemo(() => {
+    if (!surroundings) return [];
+    const rough = new THREE.CatmullRomCurve3(
+      [[-4.4, -8], [-3.7, -5], [-3.2, -2.4], [-2.95, 0], [-2.75, 2.3], [-2.2, 4.1], [-1.1, 5.7], [0.7, 7.2], [2.6, 8.4], [4.8, 9.6]].map(
+        ([dx, dy]) => new THREE.Vector3(kxw + dx, kyw + dy, 0),
+      ),
+    );
+    return rough.getSpacedPoints(300).map((q) => new THREE.Vector3(q.x, q.y, surroundings.h(...surroundings.toLonLat(q.x, q.y)) + 0.06));
+  }, [surroundings, kxw, kyw]);
+  const showCountry = frame > PIN - 90 && frame < PART_B + 140;
+  const sunTarget = useMemo(() => new THREE.Object3D(), []);
+  sunTarget.position.set(kxw, kyw, kz);
+  sunTarget.updateMatrixWorld();
   const pinLabel = project2D(pinWorld);
   const pinLabelS = spring({ frame: frame - (PIN + 12), fps, config: { damping: 12 } }) * interpolate(frame, [PART_B - 10, PART_B + 15], [1, 0], clamp);
 
@@ -607,10 +466,25 @@ export const Scene3: React.FC = () => {
       style={{ background: "radial-gradient(circle at 12% 8%, #fffbe8 0%, #d9f0ef 14%, #7fc0d6 34%, #3a7fa8 62%, #1d4a6e 100%)" }}
     >
       {textures && h && (
-        <ThreeCanvas width={width} height={height} flat camera={{ fov: FOV, near: 0.1, far: 3000 }}>
+        <ThreeCanvas width={width} height={height} flat shadows camera={{ fov: FOV, near: 0.1, far: 3000 }}>
           <CameraRig pose={pose} />
-          <ambientLight intensity={1.1} />
-          <directionalLight position={SUN.clone().multiplyScalar(50).toArray()} intensity={1.6} />
+          <hemisphereLight args={["#e4f1ff", "#6f7f4a", 1.15]} />
+          <primitive object={sunTarget} />
+          <directionalLight
+            position={[kxw + SUN.x * 30, kyw + SUN.y * 30, kz + SUN.z * 30]}
+            target={sunTarget}
+            intensity={2.4}
+            color="#fff1dc"
+            castShadow
+            shadow-mapSize={[2048, 2048]}
+            shadow-bias={-0.0004}
+            shadow-camera-left={-7}
+            shadow-camera-right={7}
+            shadow-camera-top={7}
+            shadow-camera-bottom={-7}
+            shadow-camera-near={1}
+            shadow-camera-far={80}
+          />
           <EurasiaMap
             textures={textures}
             progress={WAVES.length}
@@ -620,9 +494,28 @@ export const Scene3: React.FC = () => {
             borderGlow={borderGlow}
             flat={{ x: kxw, y: kyw, radius: FLAT_R, height: kz, amount: flatAmt }}
           />
-          <OrkhonRiver h={hFlat!} appear={cityAppear} />
-          <KarakorumModel frame={frame} z={kz} appear={cityAppear} />
-          <Pin frame={frame} base={new THREE.Vector3(kxw, kyw, kz + 0.05)} visible={interpolate(frame, [PART_B + 40, PART_B + 90], [1, 0], clamp)} />
+          <OrkhonRiver points={river} appear={cityAppear} />
+          {cityAppear > 0.01 && (
+            <group position={[kxw, kyw, kz]} scale={CITY_SCALE * cityAppear}>
+              <KarakorumCity frame={frame} />
+            </group>
+          )}
+          {showCountry && surroundings && (
+            <group scale={[1, 1, Math.max(0.001, Math.min(1, cityAppear * 1.2))]}>
+              <Roads s={surroundings} />
+              <Traffic s={surroundings} frame={frame} />
+              <CampsAndHerds s={surroundings} frame={frame} />
+              <Countryside s={surroundings} river={river} />
+            </group>
+          )}
+          {/* catches building shadows on the valley floor */}
+          {cityAppear > 0.01 && (
+            <mesh position={[kxw, kyw, kz + 0.004]} receiveShadow>
+              <circleGeometry args={[3.3, 64]} />
+              <shadowMaterial opacity={0.28} />
+            </mesh>
+          )}
+          <Pin frame={frame} base={new THREE.Vector3(kxw, kyw, kz + 0.05)} visible={interpolate(frame, [PIN + 50, PIN + 85], [1, 0], clamp)} />
           <Routes frame={frame} h={h} />
           <Clouds frame={frame} pose={pose} />
         </ThreeCanvas>
@@ -635,7 +528,7 @@ export const Scene3: React.FC = () => {
 
       {/* Karakorum label */}
       {pinLabelS > 0.01 && (
-        <Label x={pinLabel.x} y={pinLabel.y} title="Karakorum" sub="Imperial Capital · Orkhon Valley" s={pinLabelS} lift={30} dot={false} />
+        <Label x={pinLabel.x} y={Math.max(150, pinLabel.y)} title="Karakorum" sub="Imperial Capital · Orkhon Valley" s={pinLabelS} lift={30} dot={false} />
       )}
 
       {/* Part B: callouts */}

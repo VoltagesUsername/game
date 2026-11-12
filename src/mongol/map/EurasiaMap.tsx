@@ -185,6 +185,10 @@ void main() {
   // close-ups: summer steppe greens on the lower ground, a green valley floor where flattened
   landCol = mix(landCol, vec3(0.38, 0.52, 0.24) * (0.85 + 0.3 * patchN), uDetail * 0.38 * (1.0 - smoothstep(0.22, 0.5, t.r)));
   landCol = mix(landCol, vec3(0.42, 0.56, 0.26) * (0.9 + 0.2 * patchN), vFlat * 0.6);
+  // forest-steppe: dark larch forest on north-facing slopes, as in real Mongolia
+  float forest = smoothstep(0.05, 0.2, n.y) * smoothstep(0.1, 0.18, t.r) * (1.0 - smoothstep(0.5, 0.65, t.r)) * uDetail * (1.0 - vFlat);
+  float speck = vnoise(vUv * vec2(${MAP.width}.0, ${MAP.height}.0) * 4.5);
+  landCol = mix(landCol, vec3(0.16, 0.26, 0.14) * (0.7 + 0.6 * speck), forest * 0.75);
   landCol = mix(landCol, landCol * vec3(0.92, 1.06, 0.9), uDetail * smoothstep(0.55, 0.75, patchN) * (1.0 - smoothstep(0.15, 0.4, t.r)));
   landCol *= shade;
 

@@ -3,7 +3,8 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { Bed, Cue, SceneSounds } from "./sfx";
+import { Bed, Cue, SceneSounds, VoiceOver, VoiceWords, speechSpans } from "./sfx";
+import scene1Voice from "./voice/scene1.words.json";
 import { remapTime } from "./timeRemap";
 import { EurasiaMap, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
@@ -23,8 +24,17 @@ const PART_C = 660;
 // Internal animation timeline (frames). The scene is played back faster to fit the
 // 3-minute video: see TIME_MAP / remapTime.
 const SCENE1_TIMELINE = 900;
-export const SCENE1_FRAMES = 660; // 22 s in the final video
-const TIME_MAP: [number, number][] = [[0, 0], [240, 300], [470, 660], [660, 900]];
+// Timed to the recorded voiceover (src/mongol/voice/scene1.words.json), which starts at VOICE_OFFSET:
+//   "...larger than Rome's."    -> map slides left (scene frame 300)
+//   "Between 1206 and 1368"      -> timeline appears (360)
+//   "23 million square km"       -> the Mongol bar grows (400)
+//   "roughly a sixth"            -> "about 16% of Earth's land" (450)
+//   "how · did · they · do · it" -> one word of HOW DID THEY DO IT? each (710 + 7 per word)
+const VOICE_OFFSET = 12;
+export const SCENE1_FRAMES = 642; // 21.4 s in the final video
+const TIME_MAP: [number, number][] = [
+  [0, 0], [253, 300], [275, 360], [387, 400], [456, 450], [512, 640], [539, 710], [563, 738], [602, 830], [642, 900],
+];
 const END = SCENE1_TIMELINE;
 // Ending: dive toward Mongolia and fade into the night sky Scene 2 opens with
 const DIVE = 830;
@@ -309,7 +319,8 @@ export const Scene1: React.FC = () => {
       <SizeComparison frame={frame} />
       <Timeline frame={frame} />
       <HowDidTheyDoIt frame={frame} />
-      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} />
+      <VoiceOver voice={scene1Voice as VoiceWords} offset={VOICE_OFFSET} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} speech={speechSpans(scene1Voice as VoiceWords, VOICE_OFFSET)} />
     </AbsoluteFill>
   );
 };

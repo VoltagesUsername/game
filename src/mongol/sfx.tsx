@@ -10,18 +10,52 @@ export const SFX_VOLUME = 1.0;
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
+/** A recorded voiceover with word timings (made by transcribing it with whisper.cpp). */
+export type VoiceWords = { file: string; words: { text: string; startMs: number; endMs: number }[] };
+
+/** When the voice is speaking, in frames of the final scene (gaps under ~0.4 s are joined). */
+export const speechSpans = (v: VoiceWords, offset: number, fps = 30): [number, number][] => {
+  const spans: [number, number][] = [];
+  for (const w of v.words) {
+    const a = offset + (w.startMs / 1000) * fps;
+    const b = offset + (w.endMs / 1000) * fps;
+    const last = spans[spans.length - 1];
+    if (last && a - last[1] < 12) last[1] = b;
+    else spans.push([a, b]);
+  }
+  return spans;
+};
+
+/** 1 when nobody is talking, down to 0.45 while the voice speaks (smooth ramps): "ducking". */
+const duckAt = (spans: [number, number][] | undefined, frame: number) => {
+  if (!spans) return 1;
+  let k = 0;
+  for (const [a, b] of spans) k = Math.max(k, interpolate(frame, [a - 6, a, b, b + 9], [0, 1, 1, 0], clamp));
+  return 1 - 0.55 * k;
+};
+
+/** The narrator. */
+export const VoiceOver: React.FC<{ voice: VoiceWords; offset: number; volume?: number }> = ({ voice, offset, volume = 1 }) => (
+  <Sequence from={Math.round(offset)} layout="none" name="voiceover">
+    <Audio src={staticFile(voice.file)} volume={volume} />
+  </Sequence>
+);
+
 /** [scene frame, sound name, volume 0..1] */
 export type Cue = [number, string, number];
 /** [sound name, from frame, to frame, volume] - a looping background sound */
 export type Bed = [string, number, number, number];
 
-const Sfx: React.FC<{ at: number; name: string; volume: number }> = ({ at, name, volume }) => (
-  <Sequence from={Math.max(0, Math.round(at))} durationInFrames={150} layout="none" name={`sfx: ${name}`}>
-    <Audio src={staticFile(`sfx/${name}.wav`)} volume={volume * SFX_VOLUME} />
-  </Sequence>
-);
+const Sfx: React.FC<{ at: number; name: string; volume: number; speech?: [number, number][] }> = ({ at, name, volume, speech }) => {
+  const start = Math.max(0, Math.round(at));
+  return (
+    <Sequence from={start} durationInFrames={150} layout="none" name={`sfx: ${name}`}>
+      <Audio src={staticFile(`sfx/${name}.wav`)} volume={(f) => volume * SFX_VOLUME * duckAt(speech, start + f)} />
+    </Sequence>
+  );
+};
 
-const Loop: React.FC<{ name: string; from: number; to: number; volume: number }> = ({ name, from, to, volume }) => {
+const Loop: React.FC<{ name: string; from: number; to: number; volume: number; speech?: [number, number][] }> = ({ name, from, to, volume, speech }) => {
   const len = Math.max(2, Math.round(to - from));
   const fade = Math.min(30, Math.floor(len / 3));
   return (
@@ -29,7 +63,7 @@ const Loop: React.FC<{ name: string; from: number; to: number; volume: number }>
       <Audio
         src={staticFile(`sfx/${name}.wav`)}
         loop
-        volume={(f) => interpolate(f, [0, fade, len - fade, len], [0, volume, volume, 0], clamp) * SFX_VOLUME}
+        volume={(f) => interpolate(f, [0, fade, len - fade, len], [0, volume, volume, 0], clamp) * SFX_VOLUME * duckAt(speech, Math.round(from) + f)}
       />
     </Sequence>
   );
@@ -39,15 +73,20 @@ const Loop: React.FC<{ name: string; from: number; to: number; volume: number }>
  * All the sounds of one scene. Cue frames are on the scene's own animation timeline;
  * pass the scene's TIME_MAP so they land at the right moment after it was sped up.
  */
-export const SceneSounds: React.FC<{ cues: Cue[]; beds?: Bed[]; map?: [number, number][] }> = ({ cues, beds = [], map }) => {
+export const SceneSounds: React.FC<{ cues: Cue[]; beds?: Bed[]; map?: [number, number][]; speech?: [number, number][] }> = ({
+  cues,
+  beds = [],
+  map,
+  speech,
+}) => {
   const to = (f: number) => (map ? outFrame(f, map) : f);
   return (
     <>
       {beds.map(([name, from, until, v], i) => (
-        <Loop key={`b${i}`} name={name} from={to(from)} to={to(until)} volume={v} />
+        <Loop key={`b${i}`} name={name} from={to(from)} to={to(until)} volume={v} speech={speech} />
       ))}
       {cues.map(([f, name, v], i) => (
-        <Sfx key={`c${i}`} at={to(f)} name={name} volume={v} />
+        <Sfx key={`c${i}`} at={to(f)} name={name} volume={v} speech={speech} />
       ))}
     </>
   );

@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Bed, Cue, SceneSounds } from "./sfx";
 import { remapTime } from "./timeRemap";
 import { Blob, Glow, Ridge, Rider, hills, mountains, seeded } from "./SteppeNight";
 import { StandingLeader } from "./characters";
@@ -656,6 +657,23 @@ const Part2: React.FC<{ frame: number }> = ({ frame }) => {
 // Scene
 // ======================================================================
 
+// ---------- sound effects (see sfx.tsx) ----------
+const SOUND_BEDS: Bed[] = [["wind", 0, END, 0.07], ["gallop", UNIFY + 45, UNIFY + 140, 0.14], ["gallop", PART_3 + 5, PART_3 + 330, 0.17]];
+const SOUND_CUES: Cue[] = [
+  ...[0, 1, 2, 3, 4].map((k): Cue => [INTRO + 12 + k * 5, "pop", 0.16]),
+  ...CLASHES.map(([, , start]): Cue => [start + CLASH_LEN / 2 - 2, "clang", 0.2]),
+  [UNIFY, "boom", 0.45], [UNIFY + 28, "shimmer", 0.28], [UNIFY + 80, "birds", 0.15],
+  [PART_2, "whoosh", 0.16], [PART_2 + 20, "pop", 0.22], [PART_2 + 32, "pop", 0.22],
+  [PART_2 + 70, "scratch", 0.28], [PART_2 + 100, "chime", 0.24],
+  ...[0, 1, 2, 3].map((r): Cue => [PART_2 + 120 + r * 10, "pop", 0.12]),
+  ...[200, 250, 300].map((t): Cue => [PART_2 + t, "swell", 0.16]),
+  ...[240, 290, 340].map((t): Cue => [PART_2 + t, "chime", 0.12]),
+  ...[0, 1, 2].map((i): Cue => [PART_3 + 20 + i * 50, "whoosh", 0.2]),
+  [PART_3 + 112, "twang", 0.18], [PART_3 + 192, "twang", 0.16],
+  [PART_3 + 158, "thunk", 0.22], [PART_3 + 254, "thunk", 0.2],
+  [CARDS_EXIT, "whoosh-down", 0.18], [CARDS_EXIT + 30, "swell", 0.24],
+];
+
 export const Scene2: React.FC = () => {
   const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height, fps } = useVideoConfig();
@@ -726,6 +744,7 @@ export const Scene2: React.FC = () => {
       <Part3Cards frame={frame} start={PART_3} exit={CARDS_EXIT} />
       {/* fade to soft white: Scene 3 opens by dropping out of these clouds */}
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: toWhite }} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} />
     </AbsoluteFill>
   );
 };

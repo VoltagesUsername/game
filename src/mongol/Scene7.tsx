@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Bed, Cue, SceneSounds } from "./sfx";
 import { Rider, Ridge, hills, seeded } from "./SteppeNight";
 import empire from "./data/empire1279.json";
 
@@ -74,6 +75,13 @@ const Stat: React.FC<{ frame: number; start: number; label: string; children: Re
     </div>
   );
 };
+
+// ---------- sound effects (see sfx.tsx) ----------
+const SOUND_BEDS: Bed[] = [["wind", 0, SCENE7_FRAMES, 0.07], ["walk", 0, SCENE7_FRAMES, 0.05]];
+const SOUND_CUES: Cue[] = [
+  [10, "shimmer", 0.18], [45, "drum", 0.26], [75, "drum", 0.26], [105, "drum", 0.26],
+  [185, "swell", 0.24], [200, "chime", 0.18],
+];
 
 export const Scene7: React.FC = () => {
   const frame = useCurrentFrame();
@@ -151,6 +159,7 @@ export const Scene7: React.FC = () => {
         </div>
       </AbsoluteFill>
       <AbsoluteFill style={{ background: "#000", opacity: fadeOut }} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} />
     </AbsoluteFill>
   );
 };

@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Bed, Cue, SceneSounds } from "./sfx";
 import { remapTime } from "./timeRemap";
 import { EurasiaMap, SUN, useHeightSampler, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
@@ -257,6 +258,17 @@ const CALLOUTS = [
 // Scene
 // ======================================================================
 
+// ---------- sound effects (see sfx.tsx) ----------
+const SOUND_BEDS: Bed[] = [["wind", 0, SCENE3_TIMELINE, 0.07]];
+const SOUND_CUES: Cue[] = [
+  [0, "whoosh-down", 0.24], [60, "whoosh", 0.24], [125, "whoosh", 0.18],
+  [PIN - 6, "thunk", 0.32], [PIN - 4, "chime", 0.22], [PIN + 12, "pop", 0.24], [PIN + 60, "birds", 0.12],
+  [PART_B + 20, "whoosh", 0.22],
+  ...CALLOUTS.map((c): Cue => [c.f, "pop", 0.18]),
+  [850, "whoosh", 0.1],
+  ...CITIES.map((c): Cue => [c.start, "shimmer", 0.15]),
+];
+
 export const Scene3: React.FC = () => {
   const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height, fps } = useVideoConfig();
@@ -415,6 +427,7 @@ export const Scene3: React.FC = () => {
 
       {/* opening: drop out of the clouds */}
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: opening }} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} />
     </AbsoluteFill>
   );
 };

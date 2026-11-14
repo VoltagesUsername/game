@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Bed, Cue, SceneSounds } from "./sfx";
 import { remapTime } from "./timeRemap";
 import { Glow, Ridge, Rider, hills, mountains, seeded } from "./SteppeNight";
 import { StandingWoman } from "./characters";
@@ -581,6 +582,23 @@ const Khatuns: React.FC<{ frame: number }> = ({ frame }) => {
 // Scene
 // ======================================================================
 
+// ---------- sound effects (see sfx.tsx) ----------
+const SOUND_BEDS: Bed[] = [["wind", 0, PART_B + 20, 0.08], ["walk", MOVE_START, MOVE_END, 0.2]];
+const SOUND_CUES: Cue[] = [
+  [20, "birds", 0.16], [300, "birds", 0.12],
+  ...[52, 77, 133, 149, 162, 176, 197].map((t): Cue => [PACK_START + t, "whoosh", 0.1]),
+  ...[100, 125, 175, 185, 195, 215, 230].map((t): Cue => [PACK_START + t, "thunk", 0.18]),
+  ...PART_LABELS.map((l): Cue => [l.f, "pop", 0.16]),
+  ...[0, 1, 2].map((i): Cue => [ICONS + i * 22, "pop", 0.22]),
+  [PART_B, "whoosh", 0.16],
+  [PART_B + 72, "lock", 0.32], [PART_B + 107, "lock", 0.32],
+  ...[140, 185, 230].map((t): Cue => [PART_B + t + 12, "unlock", 0.28]),
+  ...[140, 185, 230].map((t): Cue => [PART_B + t + 24, "chime", 0.1]),
+  [PART_C + 5, "shimmer", 0.22], [PART_C + 60, "drum", 0.26],
+  ...[110, 128, 146].map((t): Cue => [PART_C + t, "pop", 0.14]),
+  [SCENE5_TIMELINE - 45, "swell", 0.2],
+];
+
 export const Scene5: React.FC = () => {
   const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height } = useVideoConfig();
@@ -608,6 +626,7 @@ export const Scene5: React.FC = () => {
       <Khatuns frame={frame} />
 
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: Math.max(fromWhite, toWhite) }} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} />
     </AbsoluteFill>
   );
 };

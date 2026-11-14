@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Bed, Cue, SceneSounds } from "./sfx";
 import { remapTime } from "./timeRemap";
 import { EurasiaMap, SUN, useHeightSampler, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
@@ -323,6 +324,19 @@ const MapClouds: React.FC<{ frame: number; pose: Pose }> = ({ frame, pose }) => 
 // Scene
 // ======================================================================
 
+// ---------- sound effects (see sfx.tsx) ----------
+const SOUND_BEDS: Bed[] = [["wind", 0, SCENE4_TIMELINE, 0.06], ["gallop", YAM_START, YAM_START + 335, 0.18]];
+const SOUND_CUES: Cue[] = [
+  [30, "swell", 0.24], [110, "coin", 0.14], [205, "coin", 0.12], [300, "coin", 0.12],
+  ...[0, 1, 2, 3].map((i): Cue => [160 + i * 25, "pop", 0.14]),
+  [PART_B + 10, "whoosh-down", 0.24],
+  [YAM_START + 24, "chime", 0.14], [YAM_START + 54, "chime", 0.14], [YAM_START + 84, "chime", 0.14],
+  [PART_C, "whoosh", 0.18], [PART_C + 30, "drum", 0.3], [PART_C + 90, "drum", 0.3],
+  ...[100, 112, 124, 136].map((t): Cue => [PART_C + t, "pop", 0.16]),
+  [PART_C + 150, "shimmer", 0.18],
+  [SCENE4_TIMELINE - 45, "swell", 0.2],
+];
+
 export const Scene4: React.FC = () => {
   const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height, fps } = useVideoConfig();
@@ -483,6 +497,7 @@ export const Scene4: React.FC = () => {
       <Badges frame={frame} />
       {/* end on soft white: Scene 5 opens from it */}
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: interpolate(frame, [SCENE4_TIMELINE - 45, SCENE4_TIMELINE], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) }) }} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} />
     </AbsoluteFill>
   );
 };

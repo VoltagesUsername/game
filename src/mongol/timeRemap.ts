@@ -15,3 +15,14 @@ export const remapTime = (frame: number, knots: [number, number][]) => {
   }
   return knots[knots.length - 1][1];
 };
+
+/** The inverse: where a scene-timeline frame lands in the final video (used to place sounds). */
+export const outFrame = (sceneFrame: number, knots: [number, number][]) => {
+  if (sceneFrame <= knots[0][1]) return knots[0][0];
+  for (let i = 1; i < knots.length; i++) {
+    const [o0, s0] = knots[i - 1];
+    const [o1, s1] = knots[i];
+    if (sceneFrame <= s1) return o0 + ((sceneFrame - s0) / (s1 - s0)) * (o1 - o0);
+  }
+  return knots[knots.length - 1][0];
+};

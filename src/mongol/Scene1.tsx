@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Bed, Cue, SceneSounds } from "./sfx";
 import { remapTime } from "./timeRemap";
 import { EurasiaMap, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
@@ -151,6 +152,17 @@ const BlockShadow: React.FC = () => {
 
 // ---------- scene ----------
 
+// ---------- sound effects (see sfx.tsx) ----------
+const SOUND_BEDS: Bed[] = [["wind", 0, 900, 0.08]];
+const SOUND_CUES: Cue[] = [
+  [10, "swell", 0.22],
+  [20, "whoosh", 0.16], [30, "pop", 0.25],
+  [72, "swell", 0.2], [116, "swell", 0.2], [160, "swell", 0.24], [220, "swell", 0.24],
+  [PART_B + 28, "whoosh", 0.22], [PART_B + 60, "swell", 0.16], [PART_B + 100, "swell", 0.18], [PART_B + 150, "chime", 0.14],
+  ...[0, 1, 2, 3, 4].map((i): Cue => [PART_C + 50 + i * 7, "drum", i === 4 ? 0.42 : 0.3]),
+  [DIVE, "whoosh-down", 0.28],
+];
+
 export const Scene1: React.FC = () => {
   const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height } = useVideoConfig();
@@ -297,6 +309,7 @@ export const Scene1: React.FC = () => {
       <SizeComparison frame={frame} />
       <Timeline frame={frame} />
       <HowDidTheyDoIt frame={frame} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} />
     </AbsoluteFill>
   );
 };

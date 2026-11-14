@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Bed, Cue, SceneSounds } from "./sfx";
 import { EurasiaMap, SUN, useHeightSampler, useMapTextures } from "./map/EurasiaMap";
 import { MAP, WAVES } from "./map/config.js";
 import { CameraRig, Cloud, FOV, Key, Pose, poseAt, useProjector, worldAt } from "./map/mapScene";
@@ -62,6 +63,17 @@ const MapClouds: React.FC<{ frame: number; pose: Pose }> = ({ frame, pose }) => 
     </>
   );
 };
+
+// ---------- sound effects (see sfx.tsx) ----------
+const SOUND_BEDS: Bed[] = [["drone", 0, SCENE6_FRAMES, 0.13]];
+const SOUND_CUES: Cue[] = [
+  [NO_HEIR, "pop", 0.24], [NO_HEIR + 10, "crack", 0.22], [SPLIT - 60, "crack", 0.24],
+  [SPLIT, "boom", 0.5], [SPLIT + 4, "crack", 0.34],
+  ...[0, 1, 2, 3].map((i): Cue => [SPLIT + 40 + i * 14, "pop", 0.16]),
+  ...[0, 1, 2, 3].map((i): Cue => [ASSIM + i * 20, "chime", 0.07]),
+  [PLAGUE, "swell", 0.2], [PLAGUE + 50, "whoosh-down", 0.22], [PLAGUE + 60, "pop", 0.18],
+  [FALL + 20, "whoosh", 0.2], [FALL + 90, "shatter", 0.38], [FALL + 120, "pop", 0.2], [FALL + 130, "whoosh-down", 0.18],
+];
 
 export const Scene6: React.FC = () => {
   const frame = useCurrentFrame();
@@ -259,6 +271,7 @@ export const Scene6: React.FC = () => {
 
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: fromWhite }} />
       <AbsoluteFill style={{ background: NAVY, opacity: toNavy }} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} />
     </AbsoluteFill>
   );
 };

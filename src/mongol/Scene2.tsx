@@ -3,7 +3,8 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { Bed, Cue, SceneSounds } from "./sfx";
+import { Bed, Cue, SceneSounds, VoiceOver, VoiceWords, speechSpans } from "./sfx";
+import scene2Voice from "./voice/scene2.words.json";
 import { remapTime } from "./timeRemap";
 import { Blob, Glow, Ridge, Rider, hills, mountains, seeded } from "./SteppeNight";
 import { StandingLeader } from "./characters";
@@ -25,8 +26,16 @@ const PART_3 = 780; // three advantages: mobility, bow, siege tech
 // Internal animation timeline (frames). The scene is played back faster to fit the
 // 3-minute video: see TIME_MAP / remapTime.
 const SCENE2_TIMELINE = 1230;
-export const SCENE2_FRAMES = 900; // 30 s in the final video
-const TIME_MAP: [number, number][] = [[0, 0], [180, 240], [300, 390], [580, 780], [900, 1230]];
+// Timed to the voiceover (voice/scene2.words.json, with a short pause added after "Genghis Khan"):
+//   "united them" -> golden shockwave (240) · "Genghis Khan" -> banner (268), sunrise in the pause
+//   "He promoted" -> A New Order (390) · "loyalty, not royal blood" -> X and check (460-490)
+//   "composite / bows / siege" -> the three cards (800/850/900) · "unstoppable" -> cards leave (1080)
+const VOICE_OFFSET = 6;
+export const SCENE2_FRAMES = 900; // 30.0 s in the final video
+const TIME_MAP: [number, number][] = [
+  [0, 0], [266, 240], [310, 268], [362, 360], [372, 390], [434, 460], [452, 490], [470, 540], [535, 740],
+  [548, 780], [556, 800], [591, 850], [611, 900], [840, 1080], [882, 1175], [900, 1230],
+];
 const END = SCENE2_TIMELINE;
 const CARDS_EXIT = END - 150; // cards leave, camera tilts up into the clouds
 const TO_WHITE = END - 55; // fade to the white Scene 3 opens with
@@ -744,7 +753,8 @@ export const Scene2: React.FC = () => {
       <Part3Cards frame={frame} start={PART_3} exit={CARDS_EXIT} />
       {/* fade to soft white: Scene 3 opens by dropping out of these clouds */}
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: toWhite }} />
-      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} />
+      <VoiceOver voice={scene2Voice as VoiceWords} offset={VOICE_OFFSET} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} speech={speechSpans(scene2Voice as VoiceWords, VOICE_OFFSET)} />
     </AbsoluteFill>
   );
 };

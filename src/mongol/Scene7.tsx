@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { Bed, Cue, SceneSounds } from "./sfx";
+import { remapTime } from "./timeRemap";
+import { Bed, Cue, SceneSounds, VoiceOver, VoiceWords, speechSpans } from "./sfx";
+import scene7Voice from "./voice/scene7.words.json";
 import { Rider, Ridge, hills, seeded } from "./SteppeNight";
 import empire from "./data/empire1279.json";
 
@@ -12,7 +14,13 @@ import empire from "./data/empire1279.json";
  * Riders cross the moonlit horizon; fade to black.
  */
 
-export const SCENE7_FRAMES = 390;
+// Internal animation timeline (frames); played back through TIME_MAP / remapTime.
+const SCENE7_TIMELINE = 390;
+// Timed to the voiceover (voice/scene7.words.json):
+//   "scattered / tribes / steppes" -> the three stats · "the Mongols" -> title · then the closing line
+const VOICE_OFFSET = 15;
+export const SCENE7_FRAMES = 465; // 15.5 s in the final video
+const TIME_MAP: [number, number][] = [[0, 0], [60, 45], [106, 75], [164, 105], [270, 185], [304, 250], [465, 390]];
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const SERIF = "Georgia, 'Times New Roman', serif";
@@ -77,14 +85,14 @@ const Stat: React.FC<{ frame: number; start: number; label: string; children: Re
 };
 
 // ---------- sound effects (see sfx.tsx) ----------
-const SOUND_BEDS: Bed[] = [["wind", 0, SCENE7_FRAMES, 0.07], ["walk", 0, SCENE7_FRAMES, 0.05]];
+const SOUND_BEDS: Bed[] = [["wind", 0, SCENE7_TIMELINE, 0.07], ["walk", 0, SCENE7_TIMELINE, 0.05]];
 const SOUND_CUES: Cue[] = [
   [10, "shimmer", 0.18], [45, "drum", 0.26], [75, "drum", 0.26], [105, "drum", 0.26],
   [185, "swell", 0.24], [200, "chime", 0.18],
 ];
 
 export const Scene7: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height, fps } = useVideoConfig();
 
   const draw = interpolate(frame, [10, 140], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
@@ -96,7 +104,7 @@ export const Scene7: React.FC = () => {
   const statsUp = interpolate(frame, [175, 215], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
   const title = "The Mongol Empire";
   const fadeIn = interpolate(frame, [0, 25], [0, 1], clamp);
-  const fadeOut = interpolate(frame, [SCENE7_FRAMES - 35, SCENE7_FRAMES], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
+  const fadeOut = interpolate(frame, [SCENE7_TIMELINE - 35, SCENE7_TIMELINE], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
 
   return (
     <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 120%, #1c2a4a 0%, #0f1830 45%, #0b1220 100%)" }}>
@@ -112,7 +120,7 @@ export const Scene7: React.FC = () => {
           <ThreeCanvas width={width} height={height} flat camera={{ fov: 35, position: [0, 0, 10] }}>
             <Ridge h={HORIZON} z={-8} color="#2a3550" />
             {[0, 1, 2].map((i) => {
-              const x = interpolate(frame, [0, SCENE7_FRAMES], [9 + i * 1.6, -6 + i * 1.6]);
+              const x = interpolate(frame, [0, SCENE7_TIMELINE], [9 + i * 1.6, -6 + i * 1.6]);
               return (
                 <group key={i} position={[x, HORIZON(x) - 0.05, -7.9 + i * 0.01]} scale={[-0.62, 0.62, 0.62]}>
                   <Rider frame={frame * 0.6} offset={i * 1.4} hat="#c8332b" banner={i === 0} />
@@ -159,7 +167,8 @@ export const Scene7: React.FC = () => {
         </div>
       </AbsoluteFill>
       <AbsoluteFill style={{ background: "#000", opacity: fadeOut }} />
-      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} />
+      <VoiceOver voice={scene7Voice as VoiceWords} offset={VOICE_OFFSET} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} speech={speechSpans(scene7Voice as VoiceWords, VOICE_OFFSET)} />
     </AbsoluteFill>
   );
 };

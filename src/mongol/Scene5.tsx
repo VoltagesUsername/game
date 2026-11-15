@@ -3,7 +3,8 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { Bed, Cue, SceneSounds } from "./sfx";
+import { Bed, Cue, SceneSounds, VoiceOver, VoiceWords, speechSpans } from "./sfx";
+import scene5Voice from "./voice/scene5.words.json";
 import { remapTime } from "./timeRemap";
 import { Glow, Ridge, Rider, hills, mountains, seeded } from "./SteppeNight";
 import { StandingWoman } from "./characters";
@@ -23,8 +24,13 @@ import { FlatClouds, GerFootprint, PACK_DURATION, PackingGer, Sheep, YakCart } f
 // Internal animation timeline (frames). The scene is played back faster to fit the
 // 3-minute video: see TIME_MAP / remapTime.
 const SCENE5_TIMELINE = 1350;
-export const SCENE5_FRAMES = 900; // 30 s in the final video
-const TIME_MAP: [number, number][] = [[0, 0], [420, 600], [690, 1050], [900, 1350]];
+// Timed to the voiceover (voice/scene5.words.json):
+//   "lived on the move" -> the ger is packed · "ox carts" -> the family sets off
+//   "meat and dairy like airag" -> sheep / horses / airag cards · "women had far more freedom" -> comparison
+//   "owned property / traded livestock / ran camps" -> each padlock opens · "Royal women, the Khatuns" -> Khatun
+const VOICE_OFFSET = 15;
+export const SCENE5_FRAMES = 999; // 33.3 s in the final video
+const TIME_MAP: [number, number][] = [[0, 0], [57, 90], [243, 325], [252, 335], [342, 470], [405, 565], [446, 575], [466, 600], [573, 650], [603, 685], [630, 740], [672, 785], [714, 830], [744, 870], [777, 1050], [860, 1110], [885, 1160], [999, 1350]];
 const PACK_START = 90;
 const PACK_END = PACK_START + PACK_DURATION;
 const MOVE_START = PACK_END + 10;
@@ -626,7 +632,8 @@ export const Scene5: React.FC = () => {
       <Khatuns frame={frame} />
 
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: Math.max(fromWhite, toWhite) }} />
-      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} />
+      <VoiceOver voice={scene5Voice as VoiceWords} offset={VOICE_OFFSET} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} speech={speechSpans(scene5Voice as VoiceWords, VOICE_OFFSET)} />
     </AbsoluteFill>
   );
 };

@@ -2,7 +2,9 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { Bed, Cue, SceneSounds } from "./sfx";
+import { remapTime } from "./timeRemap";
+import { Bed, Cue, SceneSounds, VoiceOver, VoiceWords, speechSpans } from "./sfx";
+import scene6Voice from "./voice/scene6.words.json";
 import { EurasiaMap, SUN, useHeightSampler, useMapTextures } from "./map/EurasiaMap";
 import { MAP, WAVES } from "./map/config.js";
 import { CameraRig, Cloud, FOV, Key, Pose, poseAt, useProjector, worldAt } from "./map/mapScene";
@@ -19,7 +21,15 @@ import { MAIN, Road, pathFrom } from "./Scene4";
  * Opens from white (end of Scene 5) and fades to dark navy (Scene 7's end card).
  */
 
-export const SCENE6_FRAMES = 900; // 30 s
+// Internal animation timeline (frames); played back through TIME_MAP / remapTime.
+const SCENE6_TIMELINE = 900;
+// Timed to the voiceover (voice/scene6.words.json):
+//   "no clear rule" -> Möngke note (50) · "split into four khanates" -> split (160)
+//   "adopted local religions" -> colours fade (270) · "Devastatingly ... Black Death" -> plague (450-510)
+//   "in 1368, the Red Turban Rebellion" -> Yuan shatters (640-760) · "out of China" -> retreat (860)
+const VOICE_OFFSET = 15;
+export const SCENE6_FRAMES = 862; // 28.7 s in the final video
+const TIME_MAP: [number, number][] = [[0, 0], [50, 50], [216, 160], [298, 270], [396, 450], [499, 510], [584, 640], [655, 730], [681, 760], [796, 860], [862, 900]];
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const SERIF = "Georgia, 'Times New Roman', serif";
@@ -65,7 +75,7 @@ const MapClouds: React.FC<{ frame: number; pose: Pose }> = ({ frame, pose }) => 
 };
 
 // ---------- sound effects (see sfx.tsx) ----------
-const SOUND_BEDS: Bed[] = [["drone", 0, SCENE6_FRAMES, 0.13]];
+const SOUND_BEDS: Bed[] = [["drone", 0, SCENE6_TIMELINE, 0.13]];
 const SOUND_CUES: Cue[] = [
   [NO_HEIR, "pop", 0.24], [NO_HEIR + 10, "crack", 0.22], [SPLIT - 60, "crack", 0.24],
   [SPLIT, "boom", 0.5], [SPLIT + 4, "crack", 0.34],
@@ -76,7 +86,7 @@ const SOUND_CUES: Cue[] = [
 ];
 
 export const Scene6: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = remapTime(useCurrentFrame(), TIME_MAP);
   const { width, height, fps } = useVideoConfig();
   const textures = useMapTextures();
   const h = useHeightSampler(textures);
@@ -88,7 +98,7 @@ export const Scene6: React.FC = () => {
       { f: PLAGUE, lon: 74, lat: 44, z: 0, dist: 148, tilt: 40, turn: 0, ease: Easing.inOut(Easing.sin) },
       { f: FALL, lon: 70, lat: 44, z: 0, dist: 158, tilt: 38, turn: -2, ease: Easing.inOut(Easing.sin) },
       { f: FALL + 110, lon: 108, lat: 37, z: 0, dist: 72, tilt: 46, turn: 4, ease: Easing.inOut(Easing.cubic) },
-      { f: SCENE6_FRAMES, lon: 108, lat: 38.5, z: 0, dist: 66, tilt: 48, turn: 6, ease: Easing.inOut(Easing.sin) },
+      { f: SCENE6_TIMELINE, lon: 108, lat: 38.5, z: 0, dist: 66, tilt: 48, turn: 6, ease: Easing.inOut(Easing.sin) },
     ],
     [],
   );
@@ -127,7 +137,7 @@ export const Scene6: React.FC = () => {
   const roadOut = interpolate(frame, [FALL + 20, FALL + 60], [1, 0], clamp);
 
   const fromWhite = interpolate(frame, [0, 35], [1, 0], { ...clamp, easing: Easing.out(Easing.quad) });
-  const toNavy = interpolate(frame, [SCENE6_FRAMES - 40, SCENE6_FRAMES], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
+  const toNavy = interpolate(frame, [SCENE6_TIMELINE - 40, SCENE6_TIMELINE], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
   const year = yearAt(frame);
 
   const titles = [
@@ -135,7 +145,7 @@ export const Scene6: React.FC = () => {
     { from: SPLIT, to: ASSIM, top: "1260", main: "One empire becomes four" },
     { from: ASSIM, to: PLAGUE, top: "OVER TIME", main: "Losing a shared identity" },
     { from: PLAGUE, to: FALL, top: "THE 1340s", main: "The Black Death" },
-    { from: FALL, to: SCENE6_FRAMES, top: "1368", main: "The Red Turban Rebellion" },
+    { from: FALL, to: SCENE6_TIMELINE, top: "1368", main: "The Red Turban Rebellion" },
   ];
 
   return (
@@ -160,7 +170,7 @@ export const Scene6: React.FC = () => {
 
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 45%, transparent 58%, rgba(8,18,32,0.5) 100%)" }} />
       {/* the mood darkens as the empire falls */}
-      <AbsoluteFill style={{ background: "rgba(10,14,24,1)", opacity: interpolate(frame, [PLAGUE, FALL, FALL + 60, SCENE6_FRAMES], [0, 0.18, 0.08, 0.15], clamp) }} />
+      <AbsoluteFill style={{ background: "rgba(10,14,24,1)", opacity: interpolate(frame, [PLAGUE, FALL, FALL + 60, SCENE6_TIMELINE], [0, 0.18, 0.08, 0.15], clamp) }} />
 
       {/* "no clear heir" at Karakorum */}
       {h && (() => {
@@ -271,7 +281,8 @@ export const Scene6: React.FC = () => {
 
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: fromWhite }} />
       <AbsoluteFill style={{ background: NAVY, opacity: toNavy }} />
-      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} />
+      <VoiceOver voice={scene6Voice as VoiceWords} offset={VOICE_OFFSET} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} speech={speechSpans(scene6Voice as VoiceWords, VOICE_OFFSET)} />
     </AbsoluteFill>
   );
 };

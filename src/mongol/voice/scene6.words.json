@@ -1,0 +1,280 @@
+{
+ "file": "voice/scene6.m4a",
+ "words": [
+  {
+   "text": "But",
+   "startMs": 0,
+   "endMs": 340
+  },
+  {
+   "text": "the",
+   "startMs": 340,
+   "endMs": 470
+  },
+  {
+   "text": "Empire",
+   "startMs": 470,
+   "endMs": 920
+  },
+  {
+   "text": "had",
+   "startMs": 920,
+   "endMs": 1150
+  },
+  {
+   "text": "no",
+   "startMs": 1150,
+   "endMs": 1320
+  },
+  {
+   "text": "clear",
+   "startMs": 1320,
+   "endMs": 1680
+  },
+  {
+   "text": "rule",
+   "startMs": 1680,
+   "endMs": 2000
+  },
+  {
+   "text": "for",
+   "startMs": 2000,
+   "endMs": 2240
+  },
+  {
+   "text": "who",
+   "startMs": 2240,
+   "endMs": 2620
+  },
+  {
+   "text": "would",
+   "startMs": 2620,
+   "endMs": 2920
+  },
+  {
+   "text": "be",
+   "startMs": 2920,
+   "endMs": 3170
+  },
+  {
+   "text": "the",
+   "startMs": 3170,
+   "endMs": 3360
+  },
+  {
+   "text": "next",
+   "startMs": 3360,
+   "endMs": 3670
+  },
+  {
+   "text": "Khan.",
+   "startMs": 3670,
+   "endMs": 4080
+  },
+  {
+   "text": "After",
+   "startMs": 4080,
+   "endMs": 4600
+  },
+  {
+   "text": "the",
+   "startMs": 4600,
+   "endMs": 4890
+  },
+  {
+   "text": "1260s,",
+   "startMs": 4890,
+   "endMs": 6440
+  },
+  {
+   "text": "they",
+   "startMs": 6440,
+   "endMs": 6700
+  },
+  {
+   "text": "split",
+   "startMs": 6700,
+   "endMs": 6820
+  },
+  {
+   "text": "into",
+   "startMs": 6820,
+   "endMs": 6990
+  },
+  {
+   "text": "four",
+   "startMs": 6990,
+   "endMs": 7180
+  },
+  {
+   "text": "khanates,",
+   "startMs": 7180,
+   "endMs": 7710
+  },
+  {
+   "text": "and",
+   "startMs": 7710,
+   "endMs": 7990
+  },
+  {
+   "text": "the",
+   "startMs": 7990,
+   "endMs": 8260
+  },
+  {
+   "text": "Mongol",
+   "startMs": 8260,
+   "endMs": 9150
+  },
+  {
+   "text": "rulers",
+   "startMs": 9150,
+   "endMs": 9440
+  },
+  {
+   "text": "adopted",
+   "startMs": 9440,
+   "endMs": 9970
+  },
+  {
+   "text": "local",
+   "startMs": 9970,
+   "endMs": 10350
+  },
+  {
+   "text": "religions",
+   "startMs": 10350,
+   "endMs": 11030
+  },
+  {
+   "text": "and",
+   "startMs": 11030,
+   "endMs": 11250
+  },
+  {
+   "text": "languages.",
+   "startMs": 11250,
+   "endMs": 12000
+  },
+  {
+   "text": "Devastatingly,",
+   "startMs": 12800,
+   "endMs": 13800
+  },
+  {
+   "text": "in",
+   "startMs": 14420,
+   "endMs": 14940
+  },
+  {
+   "text": "1340,",
+   "startMs": 14940,
+   "endMs": 15980
+  },
+  {
+   "text": "the",
+   "startMs": 15980,
+   "endMs": 16230
+  },
+  {
+   "text": "Black",
+   "startMs": 16230,
+   "endMs": 16680
+  },
+  {
+   "text": "Death",
+   "startMs": 16680,
+   "endMs": 17170
+  },
+  {
+   "text": "destroyed",
+   "startMs": 17170,
+   "endMs": 17930
+  },
+  {
+   "text": "population",
+   "startMs": 17930,
+   "endMs": 18420
+  },
+  {
+   "text": "of",
+   "startMs": 18420,
+   "endMs": 18540
+  },
+  {
+   "text": "the",
+   "startMs": 18540,
+   "endMs": 18690
+  },
+  {
+   "text": "trade,",
+   "startMs": 18690,
+   "endMs": 19070
+  },
+  {
+   "text": "and",
+   "startMs": 19070,
+   "endMs": 19390
+  },
+  {
+   "text": "in",
+   "startMs": 19390,
+   "endMs": 19860
+  },
+  {
+   "text": "1368,",
+   "startMs": 19860,
+   "endMs": 20980
+  },
+  {
+   "text": "the",
+   "startMs": 20980,
+   "endMs": 21450
+  },
+  {
+   "text": "Red",
+   "startMs": 21450,
+   "endMs": 21640
+  },
+  {
+   "text": "Turban",
+   "startMs": 21640,
+   "endMs": 22300
+  },
+  {
+   "text": "Rebellion",
+   "startMs": 22300,
+   "endMs": 23600
+  },
+  {
+   "text": "drove",
+   "startMs": 23600,
+   "endMs": 23810
+  },
+  {
+   "text": "Mongols,",
+   "startMs": 23810,
+   "endMs": 24730
+  },
+  {
+   "text": "sadly,",
+   "startMs": 24730,
+   "endMs": 25460
+  },
+  {
+   "text": "out",
+   "startMs": 25460,
+   "endMs": 26050
+  },
+  {
+   "text": "of",
+   "startMs": 26050,
+   "endMs": 26130
+  },
+  {
+   "text": "China.",
+   "startMs": 26130,
+   "endMs": 26820
+  }
+ ]
+}

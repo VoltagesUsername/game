@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { Bed, Cue, SceneSounds } from "./sfx";
+import { Bed, Cue, SceneSounds, VoiceOver, VoiceWords, speechSpans } from "./sfx";
+import scene4Voice from "./voice/scene4.words.json";
 import { remapTime } from "./timeRemap";
 import { EurasiaMap, SUN, useHeightSampler, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
@@ -22,9 +23,14 @@ import { TinyRider } from "./karakorum";
 
 // Internal animation timeline (frames). The scene is played back faster to fit the
 // 3-minute video: see TIME_MAP / remapTime.
-const SCENE4_TIMELINE = 1200;
-export const SCENE4_FRAMES = 900; // 30 s in the final video
-const TIME_MAP: [number, number][] = [[0, 0], [330, 450], [620, 840], [900, 1200]];
+const SCENE4_TIMELINE = 1260;
+// Timed to the voiceover (voice/scene4.words.json):
+//   "Pax Mongolica" -> road + title · "safe / trade / technology / ideas" -> the four tags
+//   "The Yam, a relay" -> courier · "One legal code, the Yassa" -> Yassa badge
+//   "religions were tolerated" -> tolerance badge · "Islamic, Christians, Jews, much more" -> one symbol each
+const VOICE_OFFSET = 20;
+export const SCENE4_FRAMES = 974; // 32.5 s in the final video
+const TIME_MAP: [number, number][] = [[0, 0], [60, 30], [79, 60], [262, 160], [277, 185], [295, 210], [346, 235], [368, 450], [388, 480], [534, 813], [554, 840], [974, 1260]];
 const PART_B = 450;
 const PART_C = 840;
 const YAM_START = 480;
@@ -331,9 +337,9 @@ const SOUND_CUES: Cue[] = [
   ...[0, 1, 2, 3].map((i): Cue => [160 + i * 25, "pop", 0.14]),
   [PART_B + 10, "whoosh-down", 0.24],
   [YAM_START + 24, "chime", 0.14], [YAM_START + 54, "chime", 0.14], [YAM_START + 84, "chime", 0.14],
-  [PART_C, "whoosh", 0.18], [PART_C + 30, "drum", 0.3], [PART_C + 90, "drum", 0.3],
-  ...[100, 112, 124, 136].map((t): Cue => [PART_C + t, "pop", 0.16]),
-  [PART_C + 150, "shimmer", 0.18],
+  [PART_C, "whoosh", 0.18], [PART_C + 30, "drum", 0.3], [PART_C + 130, "drum", 0.3],
+  ...[216, 248, 294, 328].map((t): Cue => [PART_C + t, "pop", 0.16]),
+  [PART_C + 340, "shimmer", 0.18],
   [SCENE4_TIMELINE - 45, "swell", 0.2],
 ];
 
@@ -497,7 +503,8 @@ export const Scene4: React.FC = () => {
       <Badges frame={frame} />
       {/* end on soft white: Scene 5 opens from it */}
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: interpolate(frame, [SCENE4_TIMELINE - 45, SCENE4_TIMELINE], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) }) }} />
-      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} />
+      <VoiceOver voice={scene4Voice as VoiceWords} offset={VOICE_OFFSET} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} speech={speechSpans(scene4Voice as VoiceWords, VOICE_OFFSET)} />
     </AbsoluteFill>
   );
 };
@@ -595,16 +602,17 @@ const Badges: React.FC<{ frame: number }> = ({ frame }) => {
   const dim = interpolate(frame, [PART_C, PART_C + 40], [0, 1], clamp);
   if (dim <= 0) return null;
   const left = spring({ frame: frame - (PART_C + 30), fps, config: { damping: 13 } });
-  const right = spring({ frame: frame - (PART_C + 90), fps, config: { damping: 13 } });
+  const right = spring({ frame: frame - (PART_C + 130), fps, config: { damping: 13 } });
   // scale pans swing, then settle level ("justice")
   const tLocal = Math.max(0, frame - (PART_C + 45));
   const tilt = Math.sin(tLocal * 0.18) * 16 * Math.exp(-tLocal / 45);
-  const ringDraw = interpolate(frame, [PART_C + 150, PART_C + 200], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
+  const ringDraw = interpolate(frame, [PART_C + 340, PART_C + 390], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
   const symbols = [
-    { name: "Christianity", f: PART_C + 100 },
-    { name: "Islam", f: PART_C + 112 },
-    { name: "Buddhism", f: PART_C + 124 },
-    { name: "Daoism", f: PART_C + 136 },
+    // in the order the narration names them: "Islamic, Christians, Jews, and much more"
+    { name: "Islam", f: PART_C + 216 },
+    { name: "Christianity", f: PART_C + 248 },
+    { name: "Judaism", f: PART_C + 294 },
+    { name: "Buddhism", f: PART_C + 328 },
   ];
   const rot = frame * 0.4;
   return (
@@ -682,19 +690,18 @@ const Badges: React.FC<{ frame: number }> = ({ frame }) => {
                     })}
                   </g>
                 )}
-                {sy.name === "Daoism" && (
-                  <g>
-                    <circle r={30} fill="#1a2a3a" stroke="#f3e6cf" strokeWidth={3} />
-                    <path d="M 0 -30 A 30 30 0 0 1 0 30 A 15 15 0 0 1 0 0 A 15 15 0 0 0 0 -30 Z" fill="#f3e6cf" />
-                    <circle cy={-15} r={5} fill="#1a2a3a" />
-                    <circle cy={15} r={5} fill="#f3e6cf" />
+                {sy.name === "Judaism" && (
+                  // Star of David: two interlaced triangles
+                  <g fill="none" stroke="#f3e6cf" strokeWidth={5} strokeLinejoin="round">
+                    <polygon points="0,-32 27.7,16 -27.7,16" />
+                    <polygon points="0,32 27.7,-16 -27.7,-16" />
                   </g>
                 )}
               </g>
             );
           })}
           <text y={262} textAnchor="middle" fill={CREAM} fontFamily={SERIF} fontWeight={700} fontSize={52}>Religious Tolerance</text>
-          <text y={304} textAnchor="middle" fill={CREAM} opacity={0.85} fontFamily={SANS} fontSize={28}>Christians, Muslims, Buddhists, Daoists</text>
+          <text y={304} textAnchor="middle" fill={CREAM} opacity={0.85} fontFamily={SANS} fontSize={28}>Muslims, Christians, Jews, Buddhists & more</text>
         </g>
       </svg>
     </>

@@ -3,7 +3,8 @@ import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { Bed, Cue, SceneSounds } from "./sfx";
+import { Bed, Cue, SceneSounds, VoiceOver, VoiceWords, speechSpans } from "./sfx";
+import scene3Voice from "./voice/scene3.words.json";
 import { remapTime } from "./timeRemap";
 import { EurasiaMap, SUN, useHeightSampler, useMapTextures } from "./map/EurasiaMap";
 import { MAP_H, MAP_W, WAVES, project } from "./map/config.js";
@@ -24,8 +25,12 @@ import { CITY_SCALE, CampsAndHerds, Countryside, CountryPeople, KarakorumCity, R
 // Internal animation timeline (frames). The scene is played back faster to fit the
 // 3-minute video: see TIME_MAP / remapTime.
 const SCENE3_TIMELINE = 1200;
-export const SCENE3_FRAMES = 750; // 25 s in the final video
-const TIME_MAP: [number, number][] = [[0, 0], [150, 205], [300, 450], [560, 900], [750, 1200]];
+// Timed to the voiceover (voice/scene3.words.json):
+//   "Karakorum" -> pin lands (205) · "spread" -> pull back (450) · each region named -> its callout
+//   "Ruling it took more than an army" -> routes from Karakorum (900)
+const VOICE_OFFSET = 45;
+export const SCENE3_FRAMES = 585; // 19.5 s in the final video
+const TIME_MAP: [number, number][] = [[0, 0], [110, 205], [214, 450], [274, 600], [309, 650], [362, 700], [381, 740], [407, 780], [437, 820], [465, 900], [585, 1200]];
 const PART_B = 450;
 const PART_C = 900;
 const PIN = 205; // pin lands on Karakorum
@@ -427,7 +432,8 @@ export const Scene3: React.FC = () => {
 
       {/* opening: drop out of the clouds */}
       <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), #f4f1ea)", opacity: opening }} />
-      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} />
+      <VoiceOver voice={scene3Voice as VoiceWords} offset={VOICE_OFFSET} />
+      <SceneSounds cues={SOUND_CUES} beds={SOUND_BEDS} map={TIME_MAP} speech={speechSpans(scene3Voice as VoiceWords, VOICE_OFFSET)} />
     </AbsoluteFill>
   );
 };
